@@ -8,22 +8,32 @@
 
 /* Begin PBXBuildFile section */
 		F292CB3B1D3FA5850004646B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB3A1D3FA5850004646B /* AppDelegate.swift */; };
-		F292CB3D1D3FA5860004646B /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB3C1D3FA5860004646B /* ViewController.swift */; };
 		F292CB401D3FA5860004646B /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F292CB3E1D3FA5860004646B /* Main.storyboard */; };
 		F292CB431D3FA5860004646B /* DayPlannerV1.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = F292CB411D3FA5860004646B /* DayPlannerV1.xcdatamodeld */; };
 		F292CB451D3FA5860004646B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F292CB441D3FA5860004646B /* Assets.xcassets */; };
 		F292CB481D3FA5860004646B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F292CB461D3FA5860004646B /* LaunchScreen.storyboard */; };
+		F292CB501D4002E60004646B /* ContainerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB4F1D4002E60004646B /* ContainerViewController.swift */; };
+		F292CB521D4004C00004646B /* CenterViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB511D4004C00004646B /* CenterViewController.swift */; };
+		F292CB561D4006C30004646B /* LeftPanelViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB551D4006C30004646B /* LeftPanelViewController.swift */; };
+		F292CB581D4006F00004646B /* RightPanelViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB571D4006F00004646B /* RightPanelViewController.swift */; };
+		F292CB5B1D4353F30004646B /* TimeSeparator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB5A1D4353F30004646B /* TimeSeparator.swift */; };
+		F292CB5D1D44C8580004646B /* EventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB5C1D44C8580004646B /* EventView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		F292CB371D3FA5850004646B /* DayPlannerV1.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DayPlannerV1.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F292CB3A1D3FA5850004646B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		F292CB3C1D3FA5860004646B /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		F292CB3F1D3FA5860004646B /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		F292CB421D3FA5860004646B /* DayPlannerV1.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = DayPlannerV1.xcdatamodel; sourceTree = "<group>"; };
 		F292CB441D3FA5860004646B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F292CB471D3FA5860004646B /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		F292CB491D3FA5860004646B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		F292CB4F1D4002E60004646B /* ContainerViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContainerViewController.swift; sourceTree = "<group>"; };
+		F292CB511D4004C00004646B /* CenterViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CenterViewController.swift; sourceTree = "<group>"; };
+		F292CB551D4006C30004646B /* LeftPanelViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LeftPanelViewController.swift; sourceTree = "<group>"; };
+		F292CB571D4006F00004646B /* RightPanelViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RightPanelViewController.swift; sourceTree = "<group>"; };
+		F292CB5A1D4353F30004646B /* TimeSeparator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TimeSeparator.swift; sourceTree = "<group>"; };
+		F292CB5C1D44C8580004646B /* EventView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EventView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,14 +67,27 @@
 			isa = PBXGroup;
 			children = (
 				F292CB3A1D3FA5850004646B /* AppDelegate.swift */,
-				F292CB3C1D3FA5860004646B /* ViewController.swift */,
+				F292CB4F1D4002E60004646B /* ContainerViewController.swift */,
 				F292CB3E1D3FA5860004646B /* Main.storyboard */,
+				F292CB591D4353A90004646B /* Views */,
 				F292CB441D3FA5860004646B /* Assets.xcassets */,
 				F292CB461D3FA5860004646B /* LaunchScreen.storyboard */,
 				F292CB491D3FA5860004646B /* Info.plist */,
 				F292CB411D3FA5860004646B /* DayPlannerV1.xcdatamodeld */,
 			);
 			path = DayPlannerV1;
+			sourceTree = "<group>";
+		};
+		F292CB591D4353A90004646B /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				F292CB511D4004C00004646B /* CenterViewController.swift */,
+				F292CB551D4006C30004646B /* LeftPanelViewController.swift */,
+				F292CB571D4006F00004646B /* RightPanelViewController.swift */,
+				F292CB5A1D4353F30004646B /* TimeSeparator.swift */,
+				F292CB5C1D44C8580004646B /* EventView.swift */,
+			);
+			name = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -139,9 +162,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F292CB3D1D3FA5860004646B /* ViewController.swift in Sources */,
 				F292CB3B1D3FA5850004646B /* AppDelegate.swift in Sources */,
+				F292CB581D4006F00004646B /* RightPanelViewController.swift in Sources */,
+				F292CB501D4002E60004646B /* ContainerViewController.swift in Sources */,
+				F292CB561D4006C30004646B /* LeftPanelViewController.swift in Sources */,
 				F292CB431D3FA5860004646B /* DayPlannerV1.xcdatamodeld in Sources */,
+				F292CB521D4004C00004646B /* CenterViewController.swift in Sources */,
+				F292CB5B1D4353F30004646B /* TimeSeparator.swift in Sources */,
+				F292CB5D1D44C8580004646B /* EventView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
