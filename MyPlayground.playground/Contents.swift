@@ -26,3 +26,26 @@ dateComp.minute = 45;
 dateComp.second = 59;
 
 let specifiedDate = calendar.dateFromComponents(dateComp);
+
+let minDate = NSDate();
+
+
+let dayCounter = NSDateComponents.init();
+
+var datePickerOption : [String] = [];
+
+//for i in 0..<14 {
+    dayCounter.day = 1;
+    let date = calendar.dateByAddingComponents(dayCounter, toDate: minDate, options: [])
+    datePickerOption.append(dateFormatter.stringFromDate((date)!));
+//}
+
+let nextDayComps = calendar.components([NSCalendarUnit.Year, NSCalendarUnit.Month, NSCalendarUnit.Day], fromDate: NSDate());
+nextDayComps.hour = 0;
+nextDayComps.minute = 0;
+nextDayComps.second = 0;
+
+let yesterday = calendar.dateFromComponents(nextDayComps);
+nextDayComps.day += 1;
+let tomorrow = calendar.dateFromComponents(nextDayComps);
+

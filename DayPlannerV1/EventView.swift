@@ -7,36 +7,76 @@
 //
 
 import UIKit
+import CoreData
 
 protocol EventViewDelegate : class {
-    func nearestSnapLocation(tappedLocation: CGPoint) -> CGPoint;
+    func eventMoved(tapLocation: CGPoint, eventView: EventView);
+    func eventShouldBeginEditing(eventView: EventView);
 }
 
 class EventView: UIView {
 
     weak var delegate : EventViewDelegate?;
     
-    let viewWidth   : CGFloat = 50.0;
-    let viewHeight  : CGFloat = 50.0;
+    var eventID : NSManagedObjectID?;
+    
+    var timeLabel : UILabel! = UILabel.init();
+    var descriptionLabel : UILabel! = UILabel.init();
     
     // For drawing the frame
-    let borderHeight : CGFloat = 1.0;
+    let borderHeight : CGFloat = 2.0;
     
-    init(xOrigin: CGFloat, yOrigin: CGFloat, bgColor: UIColor) {
-        let frame : CGRect = CGRectMake(xOrigin, yOrigin, viewWidth, viewHeight);
+    // For calculating the correct frame position during moving
+    var tapOffsetFromOrigin : CGPoint = CGPointMake(0, 0);
+    
+    // How long to hold-press before view moves
+    let minPressDuration : CFTimeInterval = 0.25;
+
+    init(frame: CGRect, eventID: NSManagedObjectID, delegate: EventViewDelegate, compactFrame: Bool) {
         super.init(frame: frame);
         
-        self.backgroundColor = bgColor.colorWithAlphaComponent(0.5);
+        self.eventID = eventID;
+        self.delegate = delegate;
+        self.timeLabel.font         = UIFont.systemFontOfSize(12.0);
+        self.descriptionLabel.font  = UIFont.systemFontOfSize(12.0);
         
+        
+        // TODO: Check if event is 15 mins, use a smaller rect frame on a single line
+        // Check the compactFrame bool
+        
+        // Position of the time label
+        let timeLabelOrigin : CGPoint = CGPointMake(5, 3); // 3 points from the top
+        let timeLabelHeight : CGFloat = 10.0; // Both labels are equal height, 10 points
+        let timeLabelFrame = CGRectMake(timeLabelOrigin.x, timeLabelOrigin.y, frame.width - timeLabelOrigin.x, timeLabelHeight);
+        self.timeLabel.frame = timeLabelFrame;
+
+        // Position of description label
+        let descLabelOrigin : CGPoint = CGPointMake(timeLabelOrigin.x, timeLabelOrigin.y + timeLabelHeight + 4); // Gap between time and description of 4 points
+        let descLabelHeight : CGFloat = frame.height - descLabelOrigin.y - 3; // 3 points from bottom
+        let descLabelFrame = CGRectMake(descLabelOrigin.x, descLabelOrigin.y, frame.width - descLabelOrigin.x, descLabelHeight);
+        self.descriptionLabel.frame = descLabelFrame;
+        
+        self.addSubview(self.timeLabel);
+        self.addSubview(self.descriptionLabel);
+        
+        // Long press to move the view
         let longPressRecogniser = UILongPressGestureRecognizer.init(target: self, action: #selector(handleLongPress(_:)));
+        longPressRecogniser.minimumPressDuration = self.minPressDuration;
         self.addGestureRecognizer(longPressRecogniser);
+        
+        // Tap to edit
+        let tapRecogniser = UITapGestureRecognizer.init(target: self, action: #selector(handleTap(_:)));
+        self.addGestureRecognizer(tapRecogniser);
+        
+        // Set up the frame, and make it fade in
+        self.alpha = 0.0;
+        UIView.animateWithDuration(1.0, animations: {
+            self.alpha = 1.0;
+            //self.backgroundColor = bgColor.colorWithAlphaComponent(0.5);
+        })
     }
     
-    required init?(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder);
-    }
-    
-    
+    // Moves the event in the CenterViewController
     func handleLongPress(recognizer: UILongPressGestureRecognizer) {
         
         //let tapLocInWindow = recognizer.locationInView(nil);
@@ -45,21 +85,57 @@ class EventView: UIView {
         // This is where we move an event
         if(recognizer.state == UIGestureRecognizerState.Began)
         {
-            //if needed do some initial setup or init of views here
-        } else if(recognizer.state == UIGestureRecognizerState.Changed)
+            // Record the original tap location
+            self.tapOffsetFromOrigin = recognizer.locationInView(self);
+            
+            // Change the appearance of the view as feedback of long press
+            UIView.animateWithDuration(0.3, animations: {
+                self.alpha = 0.5;
+            })
+        }
+        
+        else if(recognizer.state == UIGestureRecognizerState.Changed)
         {
-            self.center.x = tapLoc.x// + viewWidth/2;
-            self.center.y = tapLoc.y //+ viewHeight/2;
             //move your views here.
-        } else if(recognizer.state == UIGestureRecognizerState.Ended)
+            
+            self.frame.origin.x = tapLoc.x - self.tapOffsetFromOrigin.x;
+            self.frame.origin.y = tapLoc.y - self.tapOffsetFromOrigin.y;
+        }
+        
+        else if(recognizer.state == UIGestureRecognizerState.Ended)
         {
             //else do cleanup
-            let snapLocation = self.delegate!.nearestSnapLocation(tapLoc);
-            self.center.x = snapLocation.x + self.viewWidth/2;
-            self.center.y = snapLocation.y + self.viewHeight/2;
+            let frameOrigin = CGPointMake(tapLoc.x - self.tapOffsetFromOrigin.x,
+                                        tapLoc.y - self.tapOffsetFromOrigin.y);
+            
+            // Let CenterViewController handle everything.
+            self.delegate!.eventMoved(frameOrigin, eventView: self);
+            
+            // Change the appearance back to default
+            UIView.animateWithDuration(0.3, animations: {
+                self.alpha = 1.0;
+            })
         }
     }
+
+    // Tap to edit this view
+    func handleTap(recognizer: UITapGestureRecognizer) {
+        self.delegate?.eventShouldBeginEditing(self);
+        //self.clipsToBounds
+    }
     
+// MARK: - Setter methods
+    
+    func updateStartAndEndTimes(startTime: NSDate!, endTime: NSDate!) {
+        let startTimeString = DTFormatters.sharedInstance.stringFromTime(startTime);
+        let endTimeString   = DTFormatters.sharedInstance.stringFromTime(endTime);
+        
+        self.timeLabel.text = startTimeString + " - " + endTimeString;
+    }
+    
+    func updateEventDescription(description: String) {
+        self.descriptionLabel.text = description;
+    }
     
     // Only override drawRect: if you perform custom drawing.
     // An empty implementation adversely affects performance during animation.
@@ -87,5 +163,13 @@ class EventView: UIView {
         
         //draw the stroke
         borderPath.stroke();
+    }
+    
+    func updateBGColor(bgColor: UIColor) {
+        self.backgroundColor = bgColor.colorWithAlphaComponent(0.5);
+    }
+    
+    required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder);
     }
 }

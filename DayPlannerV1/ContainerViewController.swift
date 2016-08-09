@@ -60,6 +60,7 @@ extension ContainerViewController: CenterViewControllerDelegate {
     
     // The following are delegate methods for CenterViewController
     func toggleLeftPanel() {
+        
         let notAlreadyExpanded = (currentState != SlideOutState.LeftPanelExpanded);
         
         if notAlreadyExpanded {
@@ -69,14 +70,12 @@ extension ContainerViewController: CenterViewControllerDelegate {
         animateLeftPanel(notAlreadyExpanded);
     }
     
-  //  func toggleRightPanel(withDateAndTime: NSDateComponents) {
-    func toggleRightPanel(dateAndTime: NSDateComponents?) {
+    func toggleRightPanel() {
 
         let notAlreadyExpanded = (currentState != SlideOutState.RightPanelExpanded);
         
         if notAlreadyExpanded {
             addRightPanelViewController();
-            self.rightViewController?.displayDateAndTime(dateAndTime!);
         }
         
         animateRightPanel(notAlreadyExpanded);
@@ -85,7 +84,7 @@ extension ContainerViewController: CenterViewControllerDelegate {
     func collapseSidePanels() {
         switch (currentState) {
             case SlideOutState.RightPanelExpanded:
-                toggleRightPanel(nil)
+                toggleRightPanel()
             case SlideOutState.LeftPanelExpanded:
                 toggleLeftPanel()
             default:
@@ -121,6 +120,7 @@ extension ContainerViewController: CenterViewControllerDelegate {
     
     func addChildRightPanelController(rightPanelController: RightPanelViewController) {
         rightPanelController.delegate = self.centerViewController;
+        
         
         view.insertSubview(rightPanelController.view, atIndex: 0)
         
