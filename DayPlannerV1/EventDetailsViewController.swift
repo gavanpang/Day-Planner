@@ -12,6 +12,8 @@ protocol EventDetailsViewControllerDelegate {
     func eventDescription() -> String;
     func eventStartDateAndTime() -> NSDate;
     func eventEndTime() -> NSDate;
+    func eventColorIndex() -> Int;
+    func eventDidRequestDeleteAction();
 }
 
 class EventDetailsViewController: UITableViewController {
@@ -33,10 +35,19 @@ class EventDetailsViewController: UITableViewController {
     @IBOutlet weak var endTimeLabel     : UILabel!;
     
     let calendar = NSCalendar.currentCalendar();
-
-    private var selectedDateIndex   : NSInteger = 0;
-    private var allDates            : [NSDate] = [];
-    private var datePickerOptions   : [String] = [];
+    
+    var selectedDateIndex : Int = 0;
+    var allDates : [NSDate] = [];
+    var datePickerOptions : [String] = [];
+    
+    // Need to build this view programmatically, holds the colour selection boxes
+    @IBOutlet weak var colorSelectionCellView : UIView!;
+    var allColorOptionViews : [ColorOptionView] = [];
+    var selectedColorIndex : Int = 0;
+    var colorSelectionCellHeightMultiplier : CGFloat = 1.0;
+    
+    // Register for notifications to remind of the event
+    var notificationForEvent : Bool = false;
     
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder);
@@ -45,9 +56,6 @@ class EventDetailsViewController: UITableViewController {
     // This is called BEFORE the delegate is set
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        // Set default time for start and end time pickers
-        
     }
 
     // This is called AFTER the delegate is set, so get the event details here
@@ -56,29 +64,78 @@ class EventDetailsViewController: UITableViewController {
         
         // Data is loaded by calling the delegate, due to this funny architecture
         
-        // The date picker
-        self.setupDatePickerView();
-        
         // Event description
         self.eventTitleField.text = self.delegate?.eventDescription();
         
-        // The start time
-        let startDateTime = (self.delegate?.eventStartDateAndTime())!;
-        self.startTimePicker.date = startDateTime;
-        self.startTimeLabel.text = DTFormatters.sharedInstance.stringFromTime(startDateTime);
+        // Set up the start and end dates
+        self.setupTimePickerViews();
         
-
-
-        // The end time, or default to start time +15mins
-        let endTime = self.delegate?.eventEndTime();
-        self.endTimePicker.date = endTime!;
-        self.endTimeLabel.text = DTFormatters.sharedInstance.stringFromTime(endTime!);
+        // Then setup the date picker, as it depends on the start time being loaded first
+        self.setupDatePickerView();
+        
+        // Gets rid of empty cells at the bottom
+        self.tableView.tableFooterView = UIView();
+        
+        // Set up the color selection boxes
+        let screenWidth = UIScreen.mainScreen().bounds.width - 60;
+        
+        // Starting point of the first frame
+        var frameX : CGFloat = 10.0;
+        var frameY : CGFloat = 10.0;
+        var j = 0;
+        
+        // The following chunk ensures that the colours will be fit in a single cell
+        for i in 0..<DataManager.sharedInstance.allColors.count {
+            if((10.0 + (CGFloat(j+1)*60)) < screenWidth) {
+                frameX = 10.0 + (CGFloat(j)*60);
+                j += 1;
+            } else {
+                // Every time the options overflows the width of the screen, increase height
+                j = 0;
+                frameX = 10.0;
+                frameY += 60.0;
+                self.colorSelectionCellHeightMultiplier += 1.0
+            }
+            
+            let colorBox = ColorOptionView.init(frame: CGRectMake(frameX, frameY, 50, 50), colorIndex: i, delegate: self);
+            self.allColorOptionViews.append(colorBox);
+            self.colorSelectionCellView.addSubview(colorBox);
+        }
+        
+        // Don't forget to pull the default selection from the delegate
+        self.selectedColorIndex = (self.delegate?.eventColorIndex())!;
+        
+        // Highlight the appropriate color
+        let colorBox : ColorOptionView = self.allColorOptionViews[self.selectedColorIndex];
+        colorBox.setSelected(true);
         
         /*
          // If the title is empty then make it first responder
          if(self.eventTitleField.text == "") {
          self.eventTitleField.becomeFirstResponder();
          }*/
+    }
+    
+    private func setupTimePickerViews() {
+        // The start time, minimum is 7am
+        let startDateTime = (self.delegate?.eventStartDateAndTime())!;
+        self.startTimePicker.date = startDateTime;
+        let minDate = self.calendar.components([NSCalendarUnit.Year, NSCalendarUnit.Month, NSCalendarUnit.Day], fromDate: startDateTime);
+        minDate.hour = 8;
+        minDate.minute = 0;
+        self.startTimePicker.minimumDate = self.calendar.dateFromComponents(minDate);
+        
+        self.startTimeLabel.text = DTFormatters.sharedInstance.stringFromTime(startDateTime);
+        
+        // The date is mixed in with startDateTime, do some calculations here
+        let today = self.calendar.component(NSCalendarUnit.Day, fromDate: NSDate());
+        let selectedDay = self.calendar.component(NSCalendarUnit.Day, fromDate: startDateTime);
+        self.selectedDateIndex = selectedDay - today;
+        
+        // The end time, or default to start time +15mins
+        let endTime = self.delegate?.eventEndTime();
+        self.endTimePicker.date = endTime!;
+        self.endTimeLabel.text = DTFormatters.sharedInstance.stringFromTime(endTime!);
     }
     
     private func setupDatePickerView() {
@@ -101,9 +158,12 @@ class EventDetailsViewController: UITableViewController {
         self.datePickerShowing = false;
         
         // Set the default display date
-        self.eventDateLabel.text = self.datePickerOptions[0];
+        self.eventDateLabel.text = self.datePickerOptions[self.selectedDateIndex];
+        self.datePicker.selectRow(self.selectedDateIndex, inComponent: 0, animated: false);
     }
-    
+
+//MARK: - Delegate return accessors
+
     func updatedEventDescription() -> String {
         return eventTitleField.text!;
     }
@@ -124,15 +184,34 @@ class EventDetailsViewController: UITableViewController {
         return self.endTimePicker.date;
     }
     
+    func updatedColorIndex() -> Int {
+        return self.selectedColorIndex;
+    }
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
 }
 
+// MARK: - ColorOptionViewDelegate
+extension EventDetailsViewController : ColorOptionViewDelegate {
+    func colorOptionViewSelected(colorIndex: Int) {
+        // Deselect the old color selection
+        let view = self.allColorOptionViews[self.selectedColorIndex];
+        view.setSelected(false);
+        
+        // Select the new color selection
+        self.selectedColorIndex = colorIndex;
+        let newView = self.allColorOptionViews[self.selectedColorIndex];
+        newView.isSelected = true;
+    }
+}
+
 // The following for use with a generic picker view. Not needed for a date picker view.
 
 // MARK: - Picker view data source
+
 extension EventDetailsViewController : UIPickerViewDelegate, UIPickerViewDataSource {
     
     func numberOfComponentsInPickerView(pickerView: UIPickerView) -> Int {
@@ -180,6 +259,10 @@ extension EventDetailsViewController {
         
         }
         
+        else if(indexPath.section == 4 && indexPath.row == 0) {
+            height = 10.0 + (60.0 * self.colorSelectionCellHeightMultiplier);
+        }
+        
         return height;
     }
     
@@ -205,7 +288,7 @@ extension EventDetailsViewController {
             }
         }
         
-        else if(indexPath.section == 2 && indexPath.row == 0) {
+        if(indexPath.section == 2 && indexPath.row == 0) {
             if(self.startTimePickerShowing) {
                 // Hide start time picker
                 self.hideStartTimePicker();
@@ -215,6 +298,7 @@ extension EventDetailsViewController {
                 
                 // Hide the date picker
                 self.hideDatePicker();
+                self.hideEndTimePicker();
             }
         }
         
@@ -228,7 +312,27 @@ extension EventDetailsViewController {
                 
                 // Hide the date picker
                 self.hideDatePicker();
+                self.hideStartTimePicker();
             }
+        }
+        
+        else if(indexPath.section == 6 && indexPath.row == 0) {
+            // Show prompt and delete on confirm
+            let alertController = UIAlertController(title: nil, message: "This event will be deleted. This action cannot be undone.", preferredStyle: .ActionSheet)
+            
+            let cancelAction = UIAlertAction(title: "Cancel", style: .Cancel) { (action) in
+                // Do nothing
+            }
+            
+            let deleteAction = UIAlertAction(title: "Delete ALL items", style: .Destructive) { (action) in
+                
+                self.delegate?.eventDidRequestDeleteAction();
+            }
+            
+            alertController.addAction(cancelAction);
+            alertController.addAction(deleteAction);
+            
+            self.presentViewController(alertController, animated: true) {}
         }
     }
     

@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="10174" systemVersion="15C50" minimumToolsVersion="Automatic">
     <entity name="Event" representedClassName="Event" syncable="YES">
-        <attribute name="endTime" optional="YES" attributeType="Date" syncable="YES"/>
-        <attribute name="eventDateAndTime" optional="YES" attributeType="Date" syncable="YES"/>
-        <attribute name="eventDescription" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="color" attributeType="Integer 64" defaultValueString="0" syncable="YES"/>
+        <attribute name="endTime" attributeType="Date" syncable="YES"/>
+        <attribute name="eventDateAndTime" attributeType="Date" syncable="YES"/>
+        <attribute name="eventDescription" attributeType="String" syncable="YES"/>
+        <attribute name="isComplete" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
     </entity>
     <elements>
-        <element name="Event" positionX="-63" positionY="-18" width="128" height="90"/>
+        <element name="Event" positionX="-63" positionY="-18" width="128" height="120"/>
     </elements>
 </model>

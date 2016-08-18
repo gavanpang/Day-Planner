@@ -12,16 +12,21 @@ import CoreData
 protocol EventViewDelegate : class {
     func eventMoved(tapLocation: CGPoint, eventView: EventView);
     func eventShouldBeginEditing(eventView: EventView);
+    func eventToggleCompletionState(objectID: NSManagedObjectID) -> Bool;
 }
 
 class EventView: UIView {
 
     weak var delegate : EventViewDelegate?;
     
+    // In case we ever need access directly
     var eventID : NSManagedObjectID?;
     
-    var timeLabel : UILabel! = UILabel.init();
-    var descriptionLabel : UILabel! = UILabel.init();
+    var timeTextView = UITextView.init();
+    var descriptionTextView = UITextView.init();
+    
+    // To determine whether text is strikethrough or normal
+    var isComplete : Bool = false;
     
     // For drawing the frame
     let borderHeight : CGFloat = 2.0;
@@ -31,33 +36,19 @@ class EventView: UIView {
     
     // How long to hold-press before view moves
     let minPressDuration : CFTimeInterval = 0.25;
-
+    
     init(frame: CGRect, eventID: NSManagedObjectID, delegate: EventViewDelegate, compactFrame: Bool) {
         super.init(frame: frame);
         
         self.eventID = eventID;
         self.delegate = delegate;
-        self.timeLabel.font         = UIFont.systemFontOfSize(12.0);
-        self.descriptionLabel.font  = UIFont.systemFontOfSize(12.0);
+        self.timeTextView.font         = UIFont.systemFontOfSize(12.0);
+        self.descriptionTextView.font  = UIFont.systemFontOfSize(12.0);
         
         
         // TODO: Check if event is 15 mins, use a smaller rect frame on a single line
         // Check the compactFrame bool
-        
-        // Position of the time label
-        let timeLabelOrigin : CGPoint = CGPointMake(5, 3); // 3 points from the top
-        let timeLabelHeight : CGFloat = 10.0; // Both labels are equal height, 10 points
-        let timeLabelFrame = CGRectMake(timeLabelOrigin.x, timeLabelOrigin.y, frame.width - timeLabelOrigin.x, timeLabelHeight);
-        self.timeLabel.frame = timeLabelFrame;
-
-        // Position of description label
-        let descLabelOrigin : CGPoint = CGPointMake(timeLabelOrigin.x, timeLabelOrigin.y + timeLabelHeight + 4); // Gap between time and description of 4 points
-        let descLabelHeight : CGFloat = frame.height - descLabelOrigin.y - 3; // 3 points from bottom
-        let descLabelFrame = CGRectMake(descLabelOrigin.x, descLabelOrigin.y, frame.width - descLabelOrigin.x, descLabelHeight);
-        self.descriptionLabel.frame = descLabelFrame;
-        
-        self.addSubview(self.timeLabel);
-        self.addSubview(self.descriptionLabel);
+        self.setupViews(compactFrame);
         
         // Long press to move the view
         let longPressRecogniser = UILongPressGestureRecognizer.init(target: self, action: #selector(handleLongPress(_:)));
@@ -68,12 +59,65 @@ class EventView: UIView {
         let tapRecogniser = UITapGestureRecognizer.init(target: self, action: #selector(handleTap(_:)));
         self.addGestureRecognizer(tapRecogniser);
         
+        // Swipe to toggle completion state
+        let swipeRecogniser = UISwipeGestureRecognizer.init(target: self, action: #selector(handleSwipe(_:)));
+        self.addGestureRecognizer(swipeRecogniser);
+        
         // Set up the frame, and make it fade in
         self.alpha = 0.0;
         UIView.animateWithDuration(1.0, animations: {
             self.alpha = 1.0;
             //self.backgroundColor = bgColor.colorWithAlphaComponent(0.5);
         })
+    }
+    
+    func setupViews(compactFrame: Bool) {
+        // Position of the time label
+        let timeLabelOrigin : CGPoint = CGPointMake(0, 0); // 3 points from the top
+        let timeLabelHeight : CGFloat = 15.0; // Both labels are equal height, 10 points
+        let timeLabelFrame = CGRectMake(timeLabelOrigin.x, timeLabelOrigin.y, frame.width/2, timeLabelHeight);
+        self.timeTextView.frame = timeLabelFrame;
+        
+        let descTVFrame : CGRect!;
+        
+        // An event of 15 minutes requires a compact view so that the description is visible
+        if(compactFrame) {
+            let descTVOrigin : CGPoint = CGPointMake(frame.width/2, 0);
+            let descTVHeight : CGFloat = self.frame.height;
+            descTVFrame = CGRectMake(descTVOrigin.x, descTVOrigin.y, frame.width/2, descTVHeight);
+        }
+            
+        else {
+            // Position of description textview
+            let descTVOrigin : CGPoint = CGPointMake(timeLabelOrigin.x, timeLabelOrigin.y + timeLabelHeight); // Gap between time and description of 4 points
+            let descTVHeight : CGFloat = self.frame.height - descTVOrigin.y - 3; // 3 points from bottom
+            descTVFrame = CGRectMake(descTVOrigin.x, descTVOrigin.y, frame.width - descTVOrigin.x, descTVHeight);
+        }
+        
+        self.descriptionTextView.frame = descTVFrame;
+        self.descriptionTextView.backgroundColor = UIColor.clearColor();
+        self.descriptionTextView.userInteractionEnabled = false;
+        
+        // Adjust margins
+        self.descriptionTextView.textContainer.lineFragmentPadding = 0;
+        self.descriptionTextView.textContainerInset = UIEdgeInsetsZero;
+        
+        self.timeTextView.backgroundColor = UIColor.clearColor();
+        self.timeTextView.userInteractionEnabled = false;
+        
+        // Adjust margins
+        self.timeTextView.textContainer.lineFragmentPadding = 0;
+        self.timeTextView.textContainerInset = UIEdgeInsetsZero;
+        
+        self.addSubview(self.timeTextView);
+        self.addSubview(self.descriptionTextView);
+    }
+    
+// MARK: - Gesture recognisers
+    // Tap to edit this view
+    func handleTap(recognizer: UITapGestureRecognizer) {
+        self.delegate?.eventShouldBeginEditing(self);
+        //self.clipsToBounds
     }
     
     // Moves the event in the CenterViewController
@@ -93,7 +137,7 @@ class EventView: UIView {
                 self.alpha = 0.5;
             })
         }
-        
+            
         else if(recognizer.state == UIGestureRecognizerState.Changed)
         {
             //move your views here.
@@ -101,12 +145,12 @@ class EventView: UIView {
             self.frame.origin.x = tapLoc.x - self.tapOffsetFromOrigin.x;
             self.frame.origin.y = tapLoc.y - self.tapOffsetFromOrigin.y;
         }
-        
+            
         else if(recognizer.state == UIGestureRecognizerState.Ended)
         {
             //else do cleanup
             let frameOrigin = CGPointMake(tapLoc.x - self.tapOffsetFromOrigin.x,
-                                        tapLoc.y - self.tapOffsetFromOrigin.y);
+                                          tapLoc.y - self.tapOffsetFromOrigin.y);
             
             // Let CenterViewController handle everything.
             self.delegate!.eventMoved(frameOrigin, eventView: self);
@@ -117,12 +161,52 @@ class EventView: UIView {
             })
         }
     }
+    
+    // Swipe will toggle completion state of the event
+    func handleSwipe(recognizer: UISwipeGestureRecognizer) {
+        // Toggle and get the result
+        self.isComplete = (self.delegate?.eventToggleCompletionState(self.eventID!))!;
+        
+        let viewText = self.descriptionTextView.text;
+        let timeText = self.timeTextView.text;
+        
+        if(isComplete == true) {
+            // Strikethrough text
+            self.descriptionTextView.attributedText = self.textWithStrikethroughFont(viewText);
+            self.timeTextView.attributedText = self.textWithStrikethroughFont(timeText!);
+        } else {
+            // Normal text
+            self.descriptionTextView.attributedText = self.textWithNormalFont(viewText);
+            self.timeTextView.attributedText = self.textWithNormalFont(timeText);
+        }
 
-    // Tap to edit this view
-    func handleTap(recognizer: UITapGestureRecognizer) {
-        self.delegate?.eventShouldBeginEditing(self);
-        //self.clipsToBounds
     }
+    
+     func textWithStrikethroughFont(text: String) -> NSAttributedString {
+         let textColour : UIColor = UIColor.darkGrayColor();
+         let font : UIFont = UIFont.systemFontOfSize(12.0);
+         let strikethroughStyle = NSNumber.init(integer: NSUnderlineStyle.StyleSingle.rawValue);
+         let attributes = [NSStrikethroughStyleAttributeName:strikethroughStyle,
+         NSForegroundColorAttributeName:textColour,
+         NSFontAttributeName: font];
+         
+         let attrText : NSAttributedString = NSAttributedString.init(string: text, attributes: attributes);
+         
+         return attrText;
+     }
+     
+     func textWithNormalFont(text: String) -> NSAttributedString {
+         let textColour : UIColor = UIColor.blackColor();
+         let font : UIFont = UIFont.systemFontOfSize(12.0);
+         let strikethroughStyle = NSNumber.init(integer: NSUnderlineStyle.StyleNone.rawValue);
+         let attributes = [NSStrikethroughStyleAttributeName:strikethroughStyle,
+         NSForegroundColorAttributeName:textColour,
+         NSFontAttributeName: font];
+         
+         let attrText : NSAttributedString = NSAttributedString.init(string: text, attributes: attributes);
+         
+         return attrText;
+     }
     
 // MARK: - Setter methods
     
@@ -130,11 +214,30 @@ class EventView: UIView {
         let startTimeString = DTFormatters.sharedInstance.stringFromTime(startTime);
         let endTimeString   = DTFormatters.sharedInstance.stringFromTime(endTime);
         
-        self.timeLabel.text = startTimeString + " - " + endTimeString;
+        self.timeTextView.text = startTimeString + " - " + endTimeString;
     }
     
     func updateEventDescription(description: String) {
-        self.descriptionLabel.text = description;
+        self.descriptionTextView.text = description;
+    }
+    
+    func updateEventCompletionState(isComplete: Bool) {
+        
+        // Record, then update text
+        self.isComplete = isComplete;
+        
+        let viewText = self.descriptionTextView.text;
+        let timeText = self.timeTextView.text;
+        
+        if(isComplete == true) {
+            // Strikethrough text
+            self.descriptionTextView.attributedText = self.textWithStrikethroughFont(viewText);
+            self.timeTextView.attributedText = self.textWithStrikethroughFont(timeText!);
+        } else {
+            // Normal text
+            self.descriptionTextView.attributedText = self.textWithNormalFont(viewText);
+            self.timeTextView.attributedText = self.textWithNormalFont(timeText);
+        }
     }
     
     // Only override drawRect: if you perform custom drawing.
@@ -165,8 +268,9 @@ class EventView: UIView {
         borderPath.stroke();
     }
     
-    func updateBGColor(bgColor: UIColor) {
-        self.backgroundColor = bgColor.colorWithAlphaComponent(0.5);
+    func updateBGColor(colorIndex: Int) {
+        let color = DataManager.sharedInstance.allColors[colorIndex];
+        self.backgroundColor = color.colorWithAlphaComponent(0.4);
     }
     
     required init?(coder aDecoder: NSCoder) {

@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		F25BDE831D508AFD00BF978F /* DTFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = F25BDE821D508AFD00BF978F /* DTFormatters.swift */; };
 		F25BDE861D592F4C00BF978F /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F25BDE851D592F4C00BF978F /* DataManager.swift */; };
+		F25BDE881D59F7EF00BF978F /* DefaultSettings.plist in Resources */ = {isa = PBXBuildFile; fileRef = F25BDE871D59F7EF00BF978F /* DefaultSettings.plist */; };
+		F25BDE921D5CBFBC00BF978F /* ColorOptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F25BDE911D5CBFBC00BF978F /* ColorOptionView.swift */; };
+		F2787C1D1D5E2A9800E91A2B /* Event+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2787C1C1D5E2A9800E91A2B /* Event+CoreDataProperties.swift */; };
 		F292CB3B1D3FA5850004646B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB3A1D3FA5850004646B /* AppDelegate.swift */; };
 		F292CB401D3FA5860004646B /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F292CB3E1D3FA5860004646B /* Main.storyboard */; };
 		F292CB431D3FA5860004646B /* DayPlannerV1.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = F292CB411D3FA5860004646B /* DayPlannerV1.xcdatamodeld */; };
@@ -22,12 +25,14 @@
 		F292CB5D1D44C8580004646B /* EventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB5C1D44C8580004646B /* EventView.swift */; };
 		F292CB5F1D489AF70004646B /* EventDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB5E1D489AF70004646B /* EventDetailsViewController.swift */; };
 		F2F2E4E31D4B343100536D32 /* Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F2E4E11D4B343100536D32 /* Event.swift */; };
-		F2F2E4E71D4B385400536D32 /* Event+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F2E4E61D4B385400536D32 /* Event+CoreDataProperties.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		F25BDE821D508AFD00BF978F /* DTFormatters.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DTFormatters.swift; sourceTree = "<group>"; };
 		F25BDE851D592F4C00BF978F /* DataManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DataManager.swift; sourceTree = "<group>"; };
+		F25BDE871D59F7EF00BF978F /* DefaultSettings.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = DefaultSettings.plist; sourceTree = "<group>"; };
+		F25BDE911D5CBFBC00BF978F /* ColorOptionView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ColorOptionView.swift; sourceTree = "<group>"; };
+		F2787C1C1D5E2A9800E91A2B /* Event+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "Event+CoreDataProperties.swift"; path = "../Event+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		F292CB371D3FA5850004646B /* DayPlannerV1.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DayPlannerV1.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F292CB3A1D3FA5850004646B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		F292CB3F1D3FA5860004646B /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -43,7 +48,6 @@
 		F292CB5C1D44C8580004646B /* EventView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EventView.swift; sourceTree = "<group>"; };
 		F292CB5E1D489AF70004646B /* EventDetailsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EventDetailsViewController.swift; sourceTree = "<group>"; };
 		F2F2E4E11D4B343100536D32 /* Event.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Event.swift; path = ../Event.swift; sourceTree = "<group>"; };
-		F2F2E4E61D4B385400536D32 /* Event+CoreDataProperties.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "Event+CoreDataProperties.swift"; path = "../Event+CoreDataProperties.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +66,7 @@
 			children = (
 				F25BDE821D508AFD00BF978F /* DTFormatters.swift */,
 				F25BDE851D592F4C00BF978F /* DataManager.swift */,
+				F25BDE911D5CBFBC00BF978F /* ColorOptionView.swift */,
 			);
 			name = "Supporting Classes";
 			sourceTree = "<group>";
@@ -115,8 +120,9 @@
 		F2F2E4DF1D4B33DC00536D32 /* Core Data */ = {
 			isa = PBXGroup;
 			children = (
-				F2F2E4E61D4B385400536D32 /* Event+CoreDataProperties.swift */,
+				F2787C1C1D5E2A9800E91A2B /* Event+CoreDataProperties.swift */,
 				F2F2E4E11D4B343100536D32 /* Event.swift */,
+				F25BDE871D59F7EF00BF978F /* DefaultSettings.plist */,
 			);
 			name = "Core Data";
 			sourceTree = "<group>";
@@ -181,6 +187,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F292CB481D3FA5860004646B /* LaunchScreen.storyboard in Resources */,
+				F25BDE881D59F7EF00BF978F /* DefaultSettings.plist in Resources */,
 				F292CB451D3FA5860004646B /* Assets.xcassets in Resources */,
 				F292CB401D3FA5860004646B /* Main.storyboard in Resources */,
 			);
@@ -194,7 +201,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				F25BDE831D508AFD00BF978F /* DTFormatters.swift in Sources */,
-				F2F2E4E71D4B385400536D32 /* Event+CoreDataProperties.swift in Sources */,
 				F292CB3B1D3FA5850004646B /* AppDelegate.swift in Sources */,
 				F292CB581D4006F00004646B /* RightPanelViewController.swift in Sources */,
 				F292CB501D4002E60004646B /* ContainerViewController.swift in Sources */,
@@ -202,7 +208,9 @@
 				F292CB431D3FA5860004646B /* DayPlannerV1.xcdatamodeld in Sources */,
 				F292CB521D4004C00004646B /* CenterViewController.swift in Sources */,
 				F292CB5F1D489AF70004646B /* EventDetailsViewController.swift in Sources */,
+				F25BDE921D5CBFBC00BF978F /* ColorOptionView.swift in Sources */,
 				F292CB5B1D4353F30004646B /* TimeSeparator.swift in Sources */,
+				F2787C1D1D5E2A9800E91A2B /* Event+CoreDataProperties.swift in Sources */,
 				F292CB5D1D44C8580004646B /* EventView.swift in Sources */,
 				F25BDE861D592F4C00BF978F /* DataManager.swift in Sources */,
 				F2F2E4E31D4B343100536D32 /* Event.swift in Sources */,

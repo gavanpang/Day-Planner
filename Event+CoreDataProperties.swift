@@ -2,7 +2,7 @@
 //  Event+CoreDataProperties.swift
 //  DayPlannerV1
 //
-//  Created by Gavan Pang on 29/07/2016.
+//  Created by Gavan Pang on 13/08/2016.
 //  Copyright © 2016 Gavan Pang. All rights reserved.
 //
 //  Choose "Create NSManagedObject Subclass…" from the Core Data editor menu
@@ -14,8 +14,10 @@ import CoreData
 
 extension Event {
 
-    @NSManaged var eventDescription: String?
-    @NSManaged var eventDateAndTime: NSDate?
+    @NSManaged var isComplete: NSNumber?
     @NSManaged var endTime: NSDate?
+    @NSManaged var eventDateAndTime: NSDate?
+    @NSManaged var eventDescription: String?
+    @NSManaged var color: NSNumber?
 
 }

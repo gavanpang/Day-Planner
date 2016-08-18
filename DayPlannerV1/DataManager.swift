@@ -22,8 +22,12 @@ class DataManager {
     // The date of the current page
     var currentViewDate : NSDate!;
     
+    // The range of valid NSDates to be included in this view
+    var currentViewDateMin : NSDate!;
+    var currentViewDateMax : NSDate!;
+    
     // To be used for date maths
-    let calendar : NSCalendar       = NSCalendar.currentCalendar();
+    let calendar : NSCalendar = NSCalendar.currentCalendar();
     
     // The array of dates for the next 2 weeks
     var nextFourteenDates : [NSDate] = [];
@@ -31,81 +35,31 @@ class DataManager {
     // Retreive the managedObjectContext from AppDelegate
     let managedObjectContext = (UIApplication.sharedApplication().delegate as! AppDelegate).managedObjectContext;
     
+    // Data store for user preferences and program defaults
+    private let prefs : NSUserDefaults = NSUserDefaults.standardUserDefaults();
+    
     // The Events of the current date
     var thisDateEvents : [Event]?;
+
+    // Colors used by everyone
+    var allColors : [UIColor] = [UIColor.orangeColor(), UIColor.blueColor(), UIColor.redColor(),
+                                 UIColor.yellowColor(), UIColor.greenColor(), UIColor.cyanColor()];
+
+    // Default font for event views
+    
     
     private init() {
-        // Unpack the NSUserDefaults
         
-        self.currentIndex = 0; // Read this from disk
+        // Set up presets
         self.setUpDates();
         
-        /*
-        let path = NSBundle.mainBundle().pathForResource("DefaultSettings", ofType: "plist")
-        let dict = NSDictionary(contentsOfFile: path!)
-        
-        self.prefs.setObject(dict, forKey: "defaults");
-        self.prefs.synchronize();
-        
-        // Get the list number that was last used when app closed
-        self.currentActiveListNumber = self.prefs.integerForKey("currentListNumber");
-        
-        // Load the list number
-        self.currentToDoList = self.loadList(self.currentActiveListNumber);
-         */
+        // Unpack the NSUserDefaults
+        self.loadAppDefaults();
     }
+
     
-// MARK : - Something
-    func loadEventsWithIndex(index: Int) -> [Event] {
-        
-        
-        // Index -1 is used when loading up, not switching views
-        if(index != -1) {
-            self.setCurrentViewDateWithIndex(index);
-        }
-        
-        // Pull all the events for the view, between the yesterday and tomorrow (ie today only)
-        
-        // Get this morning's midnight and tonight's midnight
-        let comps = self.calendar.components([NSCalendarUnit.Year, NSCalendarUnit.Month, NSCalendarUnit.Day], fromDate: self.currentViewDate);
-        comps.hour = 0;
-        comps.minute = 0;
-        comps.second = 0;
-        
-        let yesterdayMidnight = self.calendar.dateFromComponents(comps);
-        
-        comps.day += 1;
-        
-        let tomorrowMidnight = self.calendar.dateFromComponents(comps);
-        
-        // Construct the predicate
-        let pred = NSPredicate(format: "(eventDateAndTime > %@) AND (eventDateAndTime < %@)", yesterdayMidnight!, tomorrowMidnight!);
-        
-        print("Events between", yesterdayMidnight, tomorrowMidnight);
-        
-        // Sort the fetched dates in order
-        let sortDescriptor = NSSortDescriptor(key: "eventDateAndTime", ascending: true)
-        
-        // Form the fetch request with predicate
-        let fetchRequest = NSFetchRequest(entityName: "Event");
-        
-        fetchRequest.predicate = pred;
-        fetchRequest.sortDescriptors = [sortDescriptor];
-        
-        let fetchResults : [Event];
-        
-        do {
-            try fetchResults =  (self.managedObjectContext.executeFetchRequest(fetchRequest) as? [Event])!;
-                self.thisDateEvents = fetchResults;
-        } catch let error as NSError  {
-            print("Could not fetch from MOC \(error), \(error.userInfo)")
-        }
-        
-        return self.thisDateEvents!;
-        
-        //self.prefs.setInteger(newListNumber, forKey: "currentListNumber");
-        //self.synchronize();
-    }
+// MARK : -
+    
     
 // MARK : - Time and Date helpers
     func timeDateRoundUpFifteenMinutes(targetTime : NSDate) -> NSDate {
@@ -136,6 +90,7 @@ class DataManager {
         
         // Finally convert it to NSDate, and store to be accessed by EventDetailsViewController
         let roundedTime = self.calendar.dateFromComponents(currentViewDateAndTimeComponents);
+                
         return roundedTime!;
     }
     
@@ -148,6 +103,16 @@ class DataManager {
         return self.calendar.dateFromComponents(components)!;
     }
     
+    func isDateWithinCurrentViewDate(date: NSDate) -> Bool {
+        let compResult = self.calendar.compareDate(self.currentViewDateMin, toDate: date, toUnitGranularity: NSCalendarUnit.Day)
+        
+        if(compResult == NSComparisonResult.OrderedSame) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
 // MARK : - Helpers
     func setUpDates() {
         // Or set appropriate value
@@ -158,7 +123,6 @@ class DataManager {
             oneDay.day = i;
             let newDate = self.calendar.dateByAddingComponents(oneDay, toDate: today, options: [])
             self.nextFourteenDates.append(newDate!);
-            print(newDate);
         }
         
         // Set up the current view with the correct date
@@ -170,7 +134,80 @@ class DataManager {
         
         self.currentViewDate = self.nextFourteenDates[self.currentIndex];
     }
+    
+// MARK: - Setup
+    func loadEventsWithIndex(index: Int) -> [Event] {
+        
+        // Index -1 is used when loading up, not switching views
+        if(index != -1) {
+            self.setCurrentViewDateWithIndex(index);
+        }
 
+        print("Current date", self.currentViewDate);
+        
+        // Pull all the events for the view, between the yesterday and tomorrow (ie today only,
+        // today being the date of the current view)
+        
+        // Get this morning's midnight and tonight's midnight
+        self.recalculateValidDateRangeForCurrentViewDate(self.currentViewDate);
+        
+        
+        
+        // Construct the predicate
+        let pred = NSPredicate(format: "(eventDateAndTime > %@) AND (eventDateAndTime < %@)", self.currentViewDateMin, self.currentViewDateMax!);
+        
+        //print("Events between", yesterdayMidnight, tomorrowMidnight);
+        
+        // Sort the fetched dates in order
+        let sortDescriptor = NSSortDescriptor(key: "eventDateAndTime", ascending: true)
+        
+        // Form the fetch request with predicate
+        let fetchRequest = NSFetchRequest(entityName: "Event");
+        
+        fetchRequest.predicate = pred;
+        fetchRequest.sortDescriptors = [sortDescriptor];
+        
+        let fetchResults : [Event];
+        
+        do {
+            try fetchResults =  (self.managedObjectContext.executeFetchRequest(fetchRequest) as? [Event])!;
+            self.thisDateEvents = fetchResults;
+        } catch let error as NSError  {
+            print("Could not fetch from MOC \(error), \(error.userInfo)")
+        }
+        
+        // Save the current view to defaults
+        self.prefs.setInteger(index, forKey: "currentIndex");
+        self.prefs.synchronize();
+        
+        return self.thisDateEvents!;
+    }
+    
+    private func recalculateValidDateRangeForCurrentViewDate(date: NSDate) {
+        // Get this morning's midnight and tonight's midnight
+        let comps = self.calendar.components([NSCalendarUnit.Year, NSCalendarUnit.Month, NSCalendarUnit.Day], fromDate: date);
+        comps.hour = 0;
+        comps.minute = 0;
+        comps.second = 0;
+        
+        self.currentViewDateMin = self.calendar.dateFromComponents(comps);
+        
+        comps.day += 1;
+        
+        self.currentViewDateMax = self.calendar.dateFromComponents(comps);
+    }
+
+    private func loadAppDefaults() {
+        let path = NSBundle.mainBundle().pathForResource("DefaultSettings", ofType: "plist")
+        let dict = NSDictionary(contentsOfFile: path!)
+        
+        self.prefs.setObject(dict, forKey: "defaults");
+        self.prefs.synchronize();
+        
+        // Get the list number that was last used when app closed
+        self.currentIndex = self.prefs.integerForKey("currentIndex");
+    }
+    
 // MARK : - Managed Object Context
     func createEvent(startDateAndTime: NSDate) -> Event {
         return Event.createEvent(self.managedObjectContext, eventDateAndTime: startDateAndTime);

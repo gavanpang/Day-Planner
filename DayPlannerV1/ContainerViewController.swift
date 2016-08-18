@@ -92,6 +92,14 @@ extension ContainerViewController: CenterViewControllerDelegate {
         }
     }
     
+    func leftOrRightPanelIsOpen() -> Bool {
+        if(currentState == SlideOutState.BothCollapsed) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+    
     // The following are internal functions for animating views
     func addLeftPanelViewController() {
         if (leftViewController == nil) {

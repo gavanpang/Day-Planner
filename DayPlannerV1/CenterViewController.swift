@@ -14,11 +14,15 @@ protocol CenterViewControllerDelegate {
     optional func toggleLeftPanel();
     optional func toggleRightPanel();
     optional func collapseSidePanels();
+    optional func leftOrRightPanelIsOpen() -> Bool;
 }
 
 class CenterViewController: UIViewController {
     
     var delegate: CenterViewControllerDelegate?;
+    
+    // Constant
+    let hourOffset      : CGFloat = 7.0;
     
     let hourSpacing     : CGFloat = 65;
     let hourLabelWidth  : CGFloat = 50.0;
@@ -34,13 +38,15 @@ class CenterViewController: UIViewController {
     var tempDescription : String?;
     var tempStartDateTime : NSDate?;
     var tempEndTime : NSDate?;
-    var tempBGColor : UIColor?;
+    var tempColorIndex : Int = 0;
     
     @IBOutlet weak var objectsContainer : UIView!;
     @IBOutlet weak var topToolBar       : UIToolbar!;
     @IBOutlet weak var scrollView       : UIScrollView!;
     @IBOutlet weak var dateSlider       : UISlider!;
     var titleDateLabel                  : UILabel!;
+    
+    // Keep track of whether any of the side panels are toggled
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -50,24 +56,11 @@ class CenterViewController: UIViewController {
         self.setupScrollView();
         self.setupScrollViewMarkers();
         self.resizeSliderForBounds();
-        
-        // Load first batch of data with -1 as index
-        let events = DataManager.sharedInstance.loadEventsWithIndex(-1);
-        
-        print("Adding events");
-        for event in events {
-            let view = self.addEventToScrollView(event);
-            self.updateViewWithEventDetails(view, event: event);
-            
-            print(event.eventDescription, event.eventDateAndTime, event.endTime);
-        }
+        self.loadInitialViewData();
         
         // Tap received by scrollview is to create a new event
         let tapRecogniser = UITapGestureRecognizer.init(target: self, action: #selector(newEventWithCustomTime(_:)));
         self.scrollView.addGestureRecognizer(tapRecogniser);
-        
-        // Convenient to calculate this
-        self.firstSepHeight = self.hourLabelHeight/2;
     }
     
 // MARK: - IBActions
@@ -80,6 +73,8 @@ class CenterViewController: UIViewController {
     // Tapping right button adds a new event with the current time as default
     @IBAction func newEventWithCurrentTime(sender: AnyObject) {
         
+        // All we need to start a new event is the start time. Store this to be 
+        // retrieved in a callback by the EventDetailsController
         self.tempStartDateTime = DataManager.sharedInstance.timeDateRoundUpFifteenMinutes(NSDate());
         
         delegate?.toggleRightPanel?();
@@ -87,6 +82,11 @@ class CenterViewController: UIViewController {
     
     // Tapping on the scrollview creates a new event
     func newEventWithCustomTime(recognizer: UIGestureRecognizer) {
+        
+        // Ignore any taps if any side panels are open
+        if((self.delegate?.leftOrRightPanelIsOpen!()) == true) {
+            return;
+        }
         
         let tapLoc = recognizer.locationInView(self.scrollView);
         let dateAndTime = self.roundedDateForTapLocation(tapLoc);
@@ -129,7 +129,27 @@ extension CenterViewController {
         // Update/create details
         view.updateEventDescription((event.eventDescription)!);
         view.updateStartAndEndTimes((event.eventDateAndTime)!, endTime: (event.endTime)!)
-        view.updateBGColor(UIColor.orangeColor())
+        view.updateBGColor((event.color?.integerValue)!);
+    }
+    
+    func resizeViewForEvent(view: EventView, event: Event) {
+        //view.frame = frameForEventViewForTime(event.eventDateAndTime!, andEndTime: event.endTime!);
+        
+        view.removeFromSuperview();
+        if(DataManager.sharedInstance.isDateWithinCurrentViewDate(event.eventDateAndTime!)) {
+            let newView = self.addEventToScrollView(event);
+            self.updateViewWithEventDetails(newView, event: event)
+        }
+    }
+    
+    func resetTempVarsToNil() {
+        self.tempColorIndex = 0;
+        self.tempEndTime = nil;
+        self.tempStartDateTime = nil;
+        self.tempDescription = nil;
+        
+        self.currentEventView = nil;
+        self.currentEditingEvent = nil;
     }
 }
 
@@ -140,7 +160,7 @@ extension CenterViewController {
         // X and Y
         let startTimeComp = self.calendar.components([NSCalendarUnit.Hour, NSCalendarUnit.Minute], fromDate: startTime);
         
-        var yLocation = (CGFloat(startTimeComp.hour) * self.hourSpacing) + self.hourLabelHeight/2;
+        var yLocation = ((CGFloat(startTimeComp.hour) - self.hourOffset) * self.hourSpacing) + self.hourLabelHeight/2;
         yLocation += (CGFloat(startTimeComp.minute)/60.0) * self.hourSpacing;
         
         let xLocation = self.hourLabelWidth + self.firstSepHeight;
@@ -148,7 +168,6 @@ extension CenterViewController {
         // Size
         let screensize = UIScreen.mainScreen().bounds;
         let frameWidth = screensize.width - (self.hourLabelWidth + self.labelToSepOffset);
-        
         
         let endTimeComp = self.calendar.components([NSCalendarUnit.Hour, NSCalendarUnit.Minute], fromDate: endTime);
 
@@ -169,7 +188,7 @@ extension CenterViewController {
     func roundedDateForTapLocation(tapLocation: CGPoint) -> NSDate {
         // Round the y location to the closest 15 minutes
         // First round down to the closest hour
-        var hours = floor((tapLocation.y - self.firstSepHeight) / self.hourSpacing);
+        var hours = floor((tapLocation.y - self.firstSepHeight) / self.hourSpacing) + self.hourOffset;
         var minutes : NSInteger = 0;
         
         // This will do the fine-grained rounding
@@ -199,7 +218,7 @@ extension CenterViewController {
     // Return Y location for nearest snap location (currently every 15 minutes)
     func roundedLocationForEventView(tapLocation : CGPoint) -> CGPoint {
         // Round the y location to the closest hour
-        var hours = floor((tapLocation.y - self.firstSepHeight) / self.hourSpacing);
+        var hourIntervals = floor((tapLocation.y - self.firstSepHeight) / self.hourSpacing);
         
         // This will do the fine-grained rounding
         let remainder = (tapLocation.y - self.firstSepHeight) % self.hourSpacing;
@@ -218,12 +237,12 @@ extension CenterViewController {
         }
         
         if(remainder > (self.hourSpacing * 7/8)) {
-            hours += 1;
+            hourIntervals += 1;
             minutes = 0.0;
         }
         
         // X is fixed, Y is rounded to nearest 15 minutes
-        return CGPointMake(self.hourLabelWidth + self.labelToSepOffset, self.firstSepHeight + (hours * self.hourSpacing) + (minutes * self.hourSpacing));
+        return CGPointMake(self.hourLabelWidth + self.labelToSepOffset, self.firstSepHeight + (hourIntervals * self.hourSpacing) + (minutes * self.hourSpacing));
     }
     
 }
@@ -265,12 +284,30 @@ extension CenterViewController : EventViewDelegate {
         self.currentEditingEvent = DataManager.sharedInstance.eventWithID(eventView.eventID!);
         
         // Fill out the temporary variables to be read by EventDetailsController
-        self.tempStartDateTime = self.currentEditingEvent?.eventDateAndTime;
-        self.tempEndTime = self.currentEditingEvent?.endTime;
-        self.tempDescription = self.currentEditingEvent?.eventDescription;
+        self.tempStartDateTime  = self.currentEditingEvent?.eventDateAndTime;
+        self.tempEndTime        = self.currentEditingEvent?.endTime;
+        self.tempDescription    = self.currentEditingEvent?.eventDescription;
         
         // Open eventDetailsViewController and fill with details
         self.delegate?.toggleRightPanel!();
+    }
+    
+    func eventToggleCompletionState(objectID: NSManagedObjectID) -> Bool {
+        let event : Event = DataManager.sharedInstance.eventWithID(objectID)
+        let completeState : Bool = (event.isComplete?.boolValue)!;
+        
+        if(completeState == true) {
+            // Toggle false
+            event.isComplete = false;
+        } else {
+            // Toggle true
+            event.isComplete = true;
+        }
+        
+        // Save as a change was made
+        DataManager.sharedInstance.update();
+        
+        return !completeState;
     }
 }
 
@@ -304,27 +341,38 @@ extension CenterViewController : EventDetailsViewControllerDelegate {
             return self.calendar.dateByAddingComponents(fifteenMinutesComp, toDate: self.tempStartDateTime!, options: [])!;
         }
     }
+    
+    func eventColorIndex() -> Int {
+        return self.tempColorIndex;
+    }
+    
+    func eventDidRequestDeleteAction() {
+        // The current editing event will be deleted from the data store
+        DataManager.sharedInstance.deleteEvent(self.currentEditingEvent!);
+        DataManager.sharedInstance.update();
+        
+        // Toggle the right panel
+        self.delegate?.toggleRightPanel!();
+        
+        // Remove the view from the viewcontroller
+        self.currentEventView?.removeFromSuperview();
+        
+        self.resetTempVarsToNil();
+    }
 }
 
 // MARK: Left and Right ViewController delegate
 extension CenterViewController : RightPanelViewControllerDelegate {
     func rightControllerDidCancelEditing() {
-        self.delegate?.toggleRightPanel!();
         
-        self.currentEditingEvent = nil;
-        self.currentEventView = nil;
+        self.delegate?.toggleRightPanel!();
+        self.resetTempVarsToNil();
     }
     
     // This is called when 'DONE' is tapped in the right panel. We either create a new event
     // or update an existing event
     func rightControllerDidEndEditingEvent(eventVC : EventDetailsViewController) {
-       
-        // Update details
-        self.currentEditingEvent?.eventDescription = eventVC.updatedEventDescription();
-        self.currentEditingEvent?.eventDateAndTime = eventVC.updatedStartDateTime();
-        self.currentEditingEvent?.endTime = eventVC.updatedEndTime();
         
-        // Only runs if a new view to be created
         if(self.currentEventView == nil) {
             // New event so create a new EventView
             
@@ -332,24 +380,26 @@ extension CenterViewController : RightPanelViewControllerDelegate {
             self.currentEditingEvent = DataManager.sharedInstance.createEvent(eventVC.updatedStartDateTime());
             self.currentEditingEvent?.endTime = eventVC.updatedEndTime();
             self.currentEditingEvent?.eventDescription = eventVC.updatedEventDescription();
-
-            print("New Event");
-            print("Description", eventVC.updatedEventDescription());
-            print("Start", eventVC.updatedStartDateTime());
-            print("End", eventVC.updatedEndTime());
+            self.currentEditingEvent?.color = eventVC.selectedColorIndex;
             
+            print("Returned from editing", eventVC.updatedEventDescription(), eventVC.updatedStartDateTime(), eventVC.updatedEndTime());
             // Save so the objectID is no longer temporary
             DataManager.sharedInstance.update();
             
-            // Save the newly created view for reference
-            self.currentEventView = addEventToScrollView(self.currentEditingEvent!);
+            // Save the newly created view for reference, if it's in the current view
+            if(DataManager.sharedInstance.isDateWithinCurrentViewDate(eventVC.updatedStartDateTime())) {
+                self.currentEventView = addEventToScrollView(self.currentEditingEvent!);
+            }
         }
         
-            // Is an existing event
         else {
+            // Is an existing event, update the details
             self.currentEditingEvent?.eventDateAndTime = eventVC.updatedStartDateTime();
             self.currentEditingEvent?.endTime = eventVC.updatedEndTime();
             self.currentEditingEvent?.eventDescription = eventVC.updatedEventDescription();
+            
+            // Resize view (actually recreates it...)
+            self.resizeViewForEvent(self.currentEventView!, event: self.currentEditingEvent!);
             
             // Save
             DataManager.sharedInstance.update();
@@ -359,8 +409,7 @@ extension CenterViewController : RightPanelViewControllerDelegate {
         self.updateViewWithEventDetails(self.currentEventView!, event: self.currentEditingEvent!);
         
         // Reset the pointers
-        self.currentEventView = nil;
-        self.currentEditingEvent = nil;
+        self.resetTempVarsToNil();
         
         self.delegate?.toggleRightPanel!();
     }
@@ -372,6 +421,16 @@ extension CenterViewController : LeftPanelViewControllerDelegate {
 
 // MARK: - View Setup functions
 extension CenterViewController {
+    func loadInitialViewData() {
+        // Load first batch of data with -1 as index
+        let events = DataManager.sharedInstance.loadEventsWithIndex(-1);
+        
+        for event in events {
+            let view = self.addEventToScrollView(event);
+            self.updateViewWithEventDetails(view, event: event);
+        }
+    }
+    
     // Modify the top toolbar to display the title
     func setupTitleLabel() {
         
@@ -400,18 +459,18 @@ extension CenterViewController {
         // Set up the scrollview
         let screenRect : CGRect = UIScreen.mainScreen().bounds;
         let screenWidth : CGFloat = screenRect.size.width;
-        self.scrollView.contentSize = CGSizeMake(screenWidth, 24.0 * self.hourSpacing + self.hourLabelHeight);
+        self.scrollView.contentSize = CGSizeMake(screenWidth, (24.0 - self.hourOffset) * self.hourSpacing + self.hourLabelHeight);
     }
     
     func setupScrollViewMarkers() {
         
-        self.addLabelToScrollView("0:00", forTime:0);
+        /*self.addLabelToScrollView("0:00", forTime:0);
         self.addLabelToScrollView("1:00", forTime:1.0);
         self.addLabelToScrollView("2:00", forTime:2.0);
         self.addLabelToScrollView("3:00", forTime:3.0);
         self.addLabelToScrollView("4:00", forTime:4.0);
         self.addLabelToScrollView("5:00", forTime:5.0);
-        self.addLabelToScrollView("6:00", forTime:6.0);
+        self.addLabelToScrollView("6:00", forTime:6.0);*/
         self.addLabelToScrollView("7:00", forTime:7.0);
         self.addLabelToScrollView("8:00", forTime:8.0);
         self.addLabelToScrollView("9:00", forTime:9.0);
@@ -431,15 +490,17 @@ extension CenterViewController {
         self.addLabelToScrollView("23:00", forTime:23.0);
         self.addLabelToScrollView("24:00", forTime:24.0);
         
-        for i in 0...24 {
+        for i in Int(self.hourOffset)...24 {
             self.addHourSeparatorToScrollView(CGFloat(i));
-
         }
+        
+        // Convenient to calculate this
+        self.firstSepHeight = self.hourLabelHeight/2;
     }
     
     func addLabelToScrollView(time: String, forTime hour: CGFloat) {
         // Set up the label
-        let label = UILabel.init(frame: CGRectMake(0.0, hour  * self.hourSpacing, self.hourLabelWidth, self.hourLabelHeight));
+        let label = UILabel.init(frame: CGRectMake(0.0, (hour - self.hourOffset) * self.hourSpacing, self.hourLabelWidth, self.hourLabelHeight));
         label.font = UIFont.init(name: "Helvetiva-Bold", size: 18);
         label.backgroundColor = UIColor.clearColor();
         label.text = time;
@@ -453,7 +514,7 @@ extension CenterViewController {
         let screenWidth : CGFloat = screenRect.size.width;
         
         let sepX = self.hourLabelWidth + labelToSepOffset;
-        let sepY = (hour * self.hourSpacing) + self.hourLabelHeight/2;
+        let sepY = ((hour - self.hourOffset) * self.hourSpacing) + self.hourLabelHeight/2;
         let sepWidth = screenWidth - self.hourLabelWidth - labelToSepOffset;
         let sep = TimeSeparator.init(xPos: sepX, yPos: sepY, width: sepWidth);
         sep.alpha = 0.2;
@@ -485,15 +546,8 @@ extension CenterViewController {
         // If the current displayed list is different to the slider selection, scroll the view,
         // load the new list values in
         if(currentIndex != newIndex)
-        {
+        {            
             self.titleDateLabel.alpha = 0.0;
-            
-            // Notify the DataManager to load new data, and pull it out
-            let events = DataManager.sharedInstance.loadEventsWithIndex(newIndex);
-            
-            for event in events {
-                print(event.eventDescription, event.eventDateAndTime, event.endTime);
-            }
             
             // Remove old events from view
             for view in self.scrollView.subviews {
@@ -503,7 +557,16 @@ extension CenterViewController {
             }
             
             // Create new events and add them to view
+            let events = DataManager.sharedInstance.loadEventsWithIndex(newIndex);
             
+            /*for event in events {
+                print(event.eventDescription, event.eventDateAndTime, event.endTime);
+            }
+            */
+            for event in events {
+                let view = self.addEventToScrollView(event);
+                self.updateViewWithEventDetails(view, event: event);
+            }
             
             // Set the title with the newly computed date
             let currentDate = DataManager.sharedInstance.currentViewDate;
