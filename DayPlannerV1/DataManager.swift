@@ -19,6 +19,9 @@ class DataManager {
     // Date of which events to be currently displayed
     var currentIndex : Int = 0;   // Change this to be read from plist later
     
+    // Date of the last time the app data was reloaded/recalculated
+    var lastDataReloadDate : NSDate!;
+    
     // The date of the current page
     var currentViewDate : NSDate!;
     
@@ -44,11 +47,13 @@ class DataManager {
     // Colors used by everyone
     var allColors : [UIColor] = [UIColor.orangeColor(), UIColor.blueColor(), UIColor.redColor(),
                                  UIColor.yellowColor(), UIColor.greenColor(), UIColor.cyanColor()];
-
-    // Default font for event views
-    
     
     private init() {
+        
+        let path = NSBundle.mainBundle().pathForResource("DefaultSettings", ofType: "plist")
+        let dict = NSDictionary(contentsOfFile: path!)
+        
+        self.prefs.setObject(dict, forKey: "defaults");
         
         // Set up presets
         self.setUpDates();
@@ -58,10 +63,61 @@ class DataManager {
     }
 
     
-// MARK : -
+// MARK: - Functions to check whether data needs to be reloaded
+    // Data reloads to occur after 2am every morning
+    func doesDataNeedRefreshing(lastRefreshDate: NSDate) -> Bool {
+        
+        // Force-check if internal data is out of date, then the view controller's is definitely 
+        // out of date
+        if(self.didInternalDataRefresh() == true) {
+            return true;
+        }
+        
+        // Otherwise check whether enough time has elapsed from the view controller's date
+        return self.isItTimeToRefreshData(lastRefreshDate);
+    }
     
+    // Forces a check whether it's time to refresh the data. Returns true if data just got refreshed in 
+    // DataManager
+    func didInternalDataRefresh() -> Bool {
+        
+        // If it's not time to refresh, then don't...
+        if(self.isItTimeToRefreshData(self.lastDataReloadDate) == false) {
+            return false;
+        }
+        
+        // Reload as must be older than yesterday, basically re-init the whole datamanager
+        self.resetAllDataToNil();
+        self.setUpDates();
+        self.loadAppDefaults();
+        
+        return true;
+    }
     
-// MARK : - Time and Date helpers
+    func isItTimeToRefreshData(date: NSDate) -> Bool {
+        // See if it's been more than a day since the last data reload
+        let wasDataReloadedToday = self.calendar.isDateInToday(date);
+        
+        // If reloading was today, no need to reload again
+        if(wasDataReloadedToday == true) {
+            return false;
+        }
+        
+        // If it was reloaded yesterday, check whether it's currently past 2am yet
+        let wasDataReloadedYesterday = self.calendar.isDateInYesterday(date);
+        
+        if(wasDataReloadedYesterday == true) {
+            let todayHour = self.calendar.component(NSCalendarUnit.Hour, fromDate: NSDate());
+            
+            if(todayHour < 2) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+// MARK: - Time and Date helpers
     func timeDateRoundUpFifteenMinutes(targetTime : NSDate) -> NSDate {
         
         // Combine the date of the current view with the current time
@@ -94,55 +150,16 @@ class DataManager {
         return roundedTime!;
     }
     
-    func currentViewDateWithTime(hours: Int, minutes: Int) -> NSDate {
-        let components = self.calendar.components([NSCalendarUnit.Year, NSCalendarUnit.Month, NSCalendarUnit.Day], fromDate: self.currentViewDate);
-        
-        components.hour = hours;
-        components.minute = minutes;
-        
-        return self.calendar.dateFromComponents(components)!;
-    }
     
-    func isDateWithinCurrentViewDate(date: NSDate) -> Bool {
-        let compResult = self.calendar.compareDate(self.currentViewDateMin, toDate: date, toUnitGranularity: NSCalendarUnit.Day)
-        
-        if(compResult == NSComparisonResult.OrderedSame) {
-            return true;
-        } else {
-            return false;
-        }
-    }
+// MARK: - External accessors
     
-// MARK : - Helpers
-    func setUpDates() {
-        // Or set appropriate value
-        let today = NSDate();
-        let oneDay = NSDateComponents();
-        
-        for i in 0...13 {
-            oneDay.day = i;
-            let newDate = self.calendar.dateByAddingComponents(oneDay, toDate: today, options: [])
-            self.nextFourteenDates.append(newDate!);
-        }
-        
-        // Set up the current view with the correct date
-        self.currentViewDate = self.nextFourteenDates[self.currentIndex];
-    }
-    
-    func setCurrentViewDateWithIndex(index: Int) {
-        self.currentIndex = index;
-        
-        self.currentViewDate = self.nextFourteenDates[self.currentIndex];
-    }
-    
-// MARK: - Setup
     func loadEventsWithIndex(index: Int) -> [Event] {
         
         // Index -1 is used when loading up, not switching views
-        if(index != -1) {
-            self.setCurrentViewDateWithIndex(index);
-        }
-
+        //if(index != -1) {
+        self.setCurrentViewDateWithIndex(index);
+        //}
+        
         print("Current date", self.currentViewDate);
         
         // Pull all the events for the view, between the yesterday and tomorrow (ie today only,
@@ -150,8 +167,6 @@ class DataManager {
         
         // Get this morning's midnight and tonight's midnight
         self.recalculateValidDateRangeForCurrentViewDate(self.currentViewDate);
-        
-        
         
         // Construct the predicate
         let pred = NSPredicate(format: "(eventDateAndTime > %@) AND (eventDateAndTime < %@)", self.currentViewDateMin, self.currentViewDateMax!);
@@ -178,9 +193,17 @@ class DataManager {
         
         // Save the current view to defaults
         self.prefs.setInteger(index, forKey: "currentIndex");
-        self.prefs.synchronize();
         
         return self.thisDateEvents!;
+    }
+
+    
+// MARK: - Helpers
+    
+    func setCurrentViewDateWithIndex(index: Int) {
+        self.currentIndex = index;
+        
+        self.currentViewDate = self.nextFourteenDates[self.currentIndex];
     }
     
     private func recalculateValidDateRangeForCurrentViewDate(date: NSDate) {
@@ -196,17 +219,85 @@ class DataManager {
         
         self.currentViewDateMax = self.calendar.dateFromComponents(comps);
     }
+    
+    func currentViewDateWithTime(hours: Int, minutes: Int) -> NSDate {
+        let components = self.calendar.components([NSCalendarUnit.Year, NSCalendarUnit.Month, NSCalendarUnit.Day], fromDate: self.currentViewDate);
+        
+        components.hour = hours;
+        components.minute = minutes;
+        
+        return self.calendar.dateFromComponents(components)!;
+    }
+    
+    func isDateWithinCurrentViewDate(date: NSDate) -> Bool {
+        let compResult = self.calendar.compareDate(self.currentViewDateMin, toDate: date, toUnitGranularity: NSCalendarUnit.Day)
+        
+        if(compResult == NSComparisonResult.OrderedSame) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    func resetAllDataToNil() {
+        self.nextFourteenDates.removeAll();
+        
+    }
+    
+// MARK: - Setup
+    func setUpDates() {
+        // Or set appropriate value
+        let today = NSDate();
+        let oneDay = NSDateComponents();
+        
+        for i in 0...13 {
+            oneDay.day = i;
+            let newDate = self.calendar.dateByAddingComponents(oneDay, toDate: today, options: [])
+            self.nextFourteenDates.append(newDate!);
+        }
+    }
 
     private func loadAppDefaults() {
-        let path = NSBundle.mainBundle().pathForResource("DefaultSettings", ofType: "plist")
-        let dict = NSDictionary(contentsOfFile: path!)
-        
-        self.prefs.setObject(dict, forKey: "defaults");
-        self.prefs.synchronize();
         
         // Get the list number that was last used when app closed
-        self.currentIndex = self.prefs.integerForKey("currentIndex");
+        let lastOpenIndex = self.prefs.integerForKey("currentIndex");
+        
+        // Calculate the proper offset so that the correct date/page is displayed
+        self.lastDataReloadDate = self.prefs.objectForKey("lastReloadDate") as? NSDate;
+        
+        let today = NSDate();
+        
+        if(self.lastDataReloadDate == nil) {
+            // Very first program execution, save the current date as the last reload
+            
+            self.currentIndex = lastOpenIndex;
+            
+        } else {
+            // Not first program execution
+            
+            // See how long since the program was last opened
+            let comps = self.calendar.components([NSCalendarUnit.Day], fromDate: self.lastDataReloadDate, toDate: today, options: []);
+            
+            // If it's been more than 2 weeks, default the view to today
+            if(comps.day > 13) {
+                self.currentIndex = 0;
+            }
+            
+            // Otherwise calculate which day was the last opened and display that instead
+            else {
+                self.currentIndex = lastOpenIndex - comps.day;
+            }
+        }
+        
+        // Update the current view date
+        self.currentViewDate = self.nextFourteenDates[self.currentIndex];
+        
+        // Finally, update the last data reload date
+        self.lastDataReloadDate = today;
+        self.prefs.setObject(today, forKey: "lastReloadDate");
     }
+    
+    
     
 // MARK : - Managed Object Context
     func createEvent(startDateAndTime: NSDate) -> Event {

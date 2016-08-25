@@ -30,7 +30,7 @@ class RightPanelViewController : UIViewController {
     override func viewWillAppear(animated: Bool) {
         let screenWidth = UIScreen.mainScreen().bounds.width;
         
-        let myNav: UINavigationBar = UINavigationBar.init(frame: CGRectMake(60, 20, screenWidth - 60, 44));
+        let myNav: UINavigationBar = UINavigationBar.init(frame: CGRectMake(35, 20, screenWidth - 35, 44));
         self.view.addSubview(myNav);
         
         let doneItem = UIBarButtonItem.init(title: "Done", style: UIBarButtonItemStyle.Plain, target: self, action:#selector(donePressed(_:)));
@@ -61,7 +61,6 @@ class RightPanelViewController : UIViewController {
                 self.eventViewController = vc;
             }
     }
-    
 }
 
 private extension UIStoryboard {

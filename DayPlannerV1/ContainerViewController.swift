@@ -29,7 +29,7 @@ class ContainerViewController : UIViewController {
     var leftViewController          : LeftPanelViewController?;
     var rightViewController         : RightPanelViewController?;
     
-    let centerPanelExpandedOffset: CGFloat = 60;
+    let centerPanelExpandedOffset: CGFloat = 35;
     
     
     override func viewDidLoad() {
@@ -46,10 +46,6 @@ class ContainerViewController : UIViewController {
         addChildViewController(centerNavigationController)
         
         centerNavigationController.didMoveToParentViewController(self)
-        
-        //let panGestureRecognizer = UIPanGestureRecognizer(target: self, action: Selector("handlePanGesture:"))
-        //centerNavigationController.view.addGestureRecognizer(panGestureRecognizer)
-        
     }
     
 }
@@ -129,12 +125,10 @@ extension ContainerViewController: CenterViewControllerDelegate {
     func addChildRightPanelController(rightPanelController: RightPanelViewController) {
         rightPanelController.delegate = self.centerViewController;
         
-        
         view.insertSubview(rightPanelController.view, atIndex: 0)
         
         addChildViewController(rightPanelController)
         rightPanelController.didMoveToParentViewController(self)
-        
     }
     
     func animateLeftPanel(shouldExpand: Bool) {

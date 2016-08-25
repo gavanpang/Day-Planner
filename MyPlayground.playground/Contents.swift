@@ -19,33 +19,22 @@ let calendar = NSCalendar.currentCalendar();
 // Make a date by specifying it
 let dateComp = NSDateComponents.init();
 dateComp.year = 2016;
-dateComp.month = 7;
-dateComp.day = 10;
+dateComp.month = 8;
+dateComp.day = 21;
 dateComp.hour = 23;
 dateComp.minute = 45;
 dateComp.second = 59;
 
-let specifiedDate = calendar.dateFromComponents(dateComp);
+let specifiedDate1 = calendar.dateFromComponents(dateComp);
 
-let minDate = NSDate();
+dateComp.year = 2016;
+dateComp.month = 8;
+dateComp.day = 23;
+dateComp.hour = 3;
+dateComp.minute = 45;
+dateComp.second = 59;
 
+let specifiedDate2 = calendar.dateFromComponents(dateComp);
 
-let dayCounter = NSDateComponents.init();
-
-var datePickerOption : [String] = [];
-
-//for i in 0..<14 {
-    dayCounter.day = 1;
-    let date = calendar.dateByAddingComponents(dayCounter, toDate: minDate, options: [])
-    datePickerOption.append(dateFormatter.stringFromDate((date)!));
-//}
-
-let nextDayComps = calendar.components([NSCalendarUnit.Year, NSCalendarUnit.Month, NSCalendarUnit.Day], fromDate: NSDate());
-nextDayComps.hour = 0;
-nextDayComps.minute = 0;
-nextDayComps.second = 0;
-
-let yesterday = calendar.dateFromComponents(nextDayComps);
-nextDayComps.day += 1;
-let tomorrow = calendar.dateFromComponents(nextDayComps);
-
+let isTomorrow = calendar.isDateInTomorrow(specifiedDate2!);
+let isYesterday = calendar.isDateInYesterday(specifiedDate1!);

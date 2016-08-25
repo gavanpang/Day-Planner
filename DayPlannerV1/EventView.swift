@@ -37,31 +37,25 @@ class EventView: UIView {
     // How long to hold-press before view moves
     let minPressDuration : CFTimeInterval = 0.25;
     
+    var strikeThroughAttributes : [String : NSObject]!;
+    var normalAttributes : [String : NSObject]!;
+    
     init(frame: CGRect, eventID: NSManagedObjectID, delegate: EventViewDelegate, compactFrame: Bool) {
         super.init(frame: frame);
         
         self.eventID = eventID;
         self.delegate = delegate;
-        self.timeTextView.font         = UIFont.systemFontOfSize(12.0);
-        self.descriptionTextView.font  = UIFont.systemFontOfSize(12.0);
+        //self.timeTextView.font         = UIFont.systemFontOfSize(12.0);
+        //self.descriptionTextView.font  = UIFont.systemFontOfSize(12.0);
         
-        
-        // TODO: Check if event is 15 mins, use a smaller rect frame on a single line
         // Check the compactFrame bool
         self.setupViews(compactFrame);
         
-        // Long press to move the view
-        let longPressRecogniser = UILongPressGestureRecognizer.init(target: self, action: #selector(handleLongPress(_:)));
-        longPressRecogniser.minimumPressDuration = self.minPressDuration;
-        self.addGestureRecognizer(longPressRecogniser);
+        // Add all the gesture recognisers
+        self.setupGestureRecognisers();
         
-        // Tap to edit
-        let tapRecogniser = UITapGestureRecognizer.init(target: self, action: #selector(handleTap(_:)));
-        self.addGestureRecognizer(tapRecogniser);
-        
-        // Swipe to toggle completion state
-        let swipeRecogniser = UISwipeGestureRecognizer.init(target: self, action: #selector(handleSwipe(_:)));
-        self.addGestureRecognizer(swipeRecogniser);
+        // Set up the attributed text fonts
+        self.setupAttributedFonts();
         
         // Set up the frame, and make it fade in
         self.alpha = 0.0;
@@ -113,7 +107,39 @@ class EventView: UIView {
         self.addSubview(self.descriptionTextView);
     }
     
+    func setupAttributedFonts() {
+        let textColour : UIColor = UIColor.darkGrayColor();
+        let font : UIFont = UIFont.systemFontOfSize(12.0);
+        let strikethroughStyle = NSNumber.init(integer: NSUnderlineStyle.StyleSingle.rawValue);
+        self.strikeThroughAttributes = [NSStrikethroughStyleAttributeName:strikethroughStyle,
+                          NSForegroundColorAttributeName:textColour,
+                          NSFontAttributeName: font];
+        
+        let textColour2 : UIColor = UIColor.blackColor();
+        let font2 : UIFont = UIFont.systemFontOfSize(12.0);
+        let strikethroughStyle2 = NSNumber.init(integer: NSUnderlineStyle.StyleNone.rawValue);
+        self.normalAttributes = [NSStrikethroughStyleAttributeName:strikethroughStyle2,
+                                 NSForegroundColorAttributeName:textColour2,
+                                 NSFontAttributeName: font2];
+    }
+    
 // MARK: - Gesture recognisers
+    // Add all gesture recognisers to the view
+    func setupGestureRecognisers() {
+        // Long press to move the view
+        let longPressRecogniser = UILongPressGestureRecognizer.init(target: self, action: #selector(handleLongPress(_:)));
+        longPressRecogniser.minimumPressDuration = self.minPressDuration;
+        self.addGestureRecognizer(longPressRecogniser);
+        
+        // Tap to edit
+        let tapRecogniser = UITapGestureRecognizer.init(target: self, action: #selector(handleTap(_:)));
+        self.addGestureRecognizer(tapRecogniser);
+        
+        // Swipe to toggle completion state
+        let swipeRecogniser = UISwipeGestureRecognizer.init(target: self, action: #selector(handleSwipe(_:)));
+        self.addGestureRecognizer(swipeRecogniser);
+    }
+    
     // Tap to edit this view
     func handleTap(recognizer: UITapGestureRecognizer) {
         self.delegate?.eventShouldBeginEditing(self);
@@ -183,27 +209,13 @@ class EventView: UIView {
     }
     
      func textWithStrikethroughFont(text: String) -> NSAttributedString {
-         let textColour : UIColor = UIColor.darkGrayColor();
-         let font : UIFont = UIFont.systemFontOfSize(12.0);
-         let strikethroughStyle = NSNumber.init(integer: NSUnderlineStyle.StyleSingle.rawValue);
-         let attributes = [NSStrikethroughStyleAttributeName:strikethroughStyle,
-         NSForegroundColorAttributeName:textColour,
-         NSFontAttributeName: font];
-         
-         let attrText : NSAttributedString = NSAttributedString.init(string: text, attributes: attributes);
+         let attrText : NSAttributedString = NSAttributedString.init(string: text, attributes: self.strikeThroughAttributes);
          
          return attrText;
      }
      
      func textWithNormalFont(text: String) -> NSAttributedString {
-         let textColour : UIColor = UIColor.blackColor();
-         let font : UIFont = UIFont.systemFontOfSize(12.0);
-         let strikethroughStyle = NSNumber.init(integer: NSUnderlineStyle.StyleNone.rawValue);
-         let attributes = [NSStrikethroughStyleAttributeName:strikethroughStyle,
-         NSForegroundColorAttributeName:textColour,
-         NSFontAttributeName: font];
-         
-         let attrText : NSAttributedString = NSAttributedString.init(string: text, attributes: attributes);
+         let attrText : NSAttributedString = NSAttributedString.init(string: text, attributes: self.normalAttributes);
          
          return attrText;
      }

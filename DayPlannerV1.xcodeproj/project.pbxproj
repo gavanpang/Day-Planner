@@ -24,6 +24,7 @@
 		F292CB5B1D4353F30004646B /* TimeSeparator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB5A1D4353F30004646B /* TimeSeparator.swift */; };
 		F292CB5D1D44C8580004646B /* EventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB5C1D44C8580004646B /* EventView.swift */; };
 		F292CB5F1D489AF70004646B /* EventDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB5E1D489AF70004646B /* EventDetailsViewController.swift */; };
+		F2AAE23B1D6EBDA500FDE04D /* MultiUseTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2AAE23A1D6EBDA500FDE04D /* MultiUseTableViewController.swift */; };
 		F2F2E4E31D4B343100536D32 /* Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F2E4E11D4B343100536D32 /* Event.swift */; };
 /* End PBXBuildFile section */
 
@@ -47,6 +48,7 @@
 		F292CB5A1D4353F30004646B /* TimeSeparator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TimeSeparator.swift; sourceTree = "<group>"; };
 		F292CB5C1D44C8580004646B /* EventView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EventView.swift; sourceTree = "<group>"; };
 		F292CB5E1D489AF70004646B /* EventDetailsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EventDetailsViewController.swift; sourceTree = "<group>"; };
+		F2AAE23A1D6EBDA500FDE04D /* MultiUseTableViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MultiUseTableViewController.swift; sourceTree = "<group>"; };
 		F2F2E4E11D4B343100536D32 /* Event.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Event.swift; path = ../Event.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -107,14 +109,39 @@
 		F292CB591D4353A90004646B /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				F2AAE2371D6EB94D00FDE04D /* Main View */,
+				F2AAE2381D6EB95300FDE04D /* Left View */,
+				F2AAE2391D6EB95900FDE04D /* Right View */,
+			);
+			name = Views;
+			sourceTree = "<group>";
+		};
+		F2AAE2371D6EB94D00FDE04D /* Main View */ = {
+			isa = PBXGroup;
+			children = (
 				F292CB511D4004C00004646B /* CenterViewController.swift */,
-				F292CB551D4006C30004646B /* LeftPanelViewController.swift */,
-				F292CB571D4006F00004646B /* RightPanelViewController.swift */,
-				F292CB5E1D489AF70004646B /* EventDetailsViewController.swift */,
 				F292CB5A1D4353F30004646B /* TimeSeparator.swift */,
 				F292CB5C1D44C8580004646B /* EventView.swift */,
 			);
-			name = Views;
+			name = "Main View";
+			sourceTree = "<group>";
+		};
+		F2AAE2381D6EB95300FDE04D /* Left View */ = {
+			isa = PBXGroup;
+			children = (
+				F292CB551D4006C30004646B /* LeftPanelViewController.swift */,
+				F2AAE23A1D6EBDA500FDE04D /* MultiUseTableViewController.swift */,
+			);
+			name = "Left View";
+			sourceTree = "<group>";
+		};
+		F2AAE2391D6EB95900FDE04D /* Right View */ = {
+			isa = PBXGroup;
+			children = (
+				F292CB571D4006F00004646B /* RightPanelViewController.swift */,
+				F292CB5E1D489AF70004646B /* EventDetailsViewController.swift */,
+			);
+			name = "Right View";
 			sourceTree = "<group>";
 		};
 		F2F2E4DF1D4B33DC00536D32 /* Core Data */ = {
@@ -210,6 +237,7 @@
 				F292CB5F1D489AF70004646B /* EventDetailsViewController.swift in Sources */,
 				F25BDE921D5CBFBC00BF978F /* ColorOptionView.swift in Sources */,
 				F292CB5B1D4353F30004646B /* TimeSeparator.swift in Sources */,
+				F2AAE23B1D6EBDA500FDE04D /* MultiUseTableViewController.swift in Sources */,
 				F2787C1D1D5E2A9800E91A2B /* Event+CoreDataProperties.swift in Sources */,
 				F292CB5D1D44C8580004646B /* EventView.swift in Sources */,
 				F25BDE861D592F4C00BF978F /* DataManager.swift in Sources */,

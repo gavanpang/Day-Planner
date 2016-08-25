@@ -23,12 +23,11 @@ class CenterViewController: UIViewController {
     
     // Constant
     let hourOffset      : CGFloat = 7.0;
-    
     let hourSpacing     : CGFloat = 65;
     let hourLabelWidth  : CGFloat = 50.0;
     let hourLabelHeight : CGFloat = 21.0;
     let labelToSepOffset: CGFloat = 10.0;
-    var firstSepHeight  : CGFloat = 0.0;
+    var firstSepHeight  : CGFloat = 0.0;    // This gets recalculated
     
     let calendar : NSCalendar = NSCalendar.currentCalendar();
 
@@ -46,12 +45,15 @@ class CenterViewController: UIViewController {
     @IBOutlet weak var dateSlider       : UISlider!;
     var titleDateLabel                  : UILabel!;
     
-    // Keep track of whether any of the side panels are toggled
+    // Track when this view last updated data
+    var lastDataRefresh : NSDate?;
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
     
+        print("CenterVC init");
+        
         self.setupTitleLabel();
         self.setupScrollView();
         self.setupScrollViewMarkers();
@@ -124,14 +126,15 @@ extension CenterViewController {
         
         return eventView
     }
-
+    
+    // Update/create details
     func updateViewWithEventDetails(view: EventView, event: Event) {
-        // Update/create details
         view.updateEventDescription((event.eventDescription)!);
         view.updateStartAndEndTimes((event.eventDateAndTime)!, endTime: (event.endTime)!)
         view.updateBGColor((event.color?.integerValue)!);
     }
     
+    // Resize the view when an events details change
     func resizeViewForEvent(view: EventView, event: Event) {
         //view.frame = frameForEventViewForTime(event.eventDateAndTime!, andEndTime: event.endTime!);
         
@@ -211,7 +214,6 @@ extension CenterViewController {
         }
         
         // Get the full date from DataManager
-        
         return DataManager.sharedInstance.currentViewDateWithTime(Int(hours), minutes: minutes);
     }
     
@@ -247,6 +249,39 @@ extension CenterViewController {
     
 }
 
+// MARK: - App Delegate methods
+
+extension CenterViewController {
+    func checkForDateRolloverAfterAppEnteredForeground() {
+        // Check if we need to reload
+        if(DataManager.sharedInstance.doesDataNeedRefreshing(self.lastDataRefresh!) == true) {
+            // Initiate reload
+            // Remove old events from view
+            for view in self.scrollView.subviews {
+                if view.isKindOfClass(EventView) {
+                    view.removeFromSuperview();
+                }
+            }
+            
+            // Create new events and add them to view
+            let newIndex = DataManager.sharedInstance.currentIndex;
+            let events = DataManager.sharedInstance.loadEventsWithIndex(newIndex);
+            
+            // Fill in the details of the events
+            for event in events {
+                let view = self.addEventToScrollView(event);
+                self.updateViewWithEventDetails(view, event: event);
+            }
+            
+            self.dateSlider.value = Float(newIndex);
+            
+            // Set the title with the newly computed date
+            let currentDate = DataManager.sharedInstance.currentViewDate;
+            self.titleDateLabel.text = DTFormatters.sharedInstance.stringFromDate(currentDate);
+        }
+    }
+}
+
 // MARK: - EventViewDelegate
 extension CenterViewController : EventViewDelegate {
     func eventMoved(tapLocation: CGPoint, eventView: EventView) {
@@ -273,7 +308,7 @@ extension CenterViewController : EventViewDelegate {
         eventView.updateStartAndEndTimes(event.eventDateAndTime, endTime: event.endTime);
         
         // save
-        DataManager.sharedInstance.update();
+        //DataManager.sharedInstance.update();
     }
     
     func eventShouldBeginEditing(eventView: EventView) {
@@ -287,6 +322,7 @@ extension CenterViewController : EventViewDelegate {
         self.tempStartDateTime  = self.currentEditingEvent?.eventDateAndTime;
         self.tempEndTime        = self.currentEditingEvent?.endTime;
         self.tempDescription    = self.currentEditingEvent?.eventDescription;
+        self.tempColorIndex     = (self.currentEditingEvent?.color?.integerValue)!;
         
         // Open eventDetailsViewController and fill with details
         self.delegate?.toggleRightPanel!();
@@ -305,7 +341,7 @@ extension CenterViewController : EventViewDelegate {
         }
         
         // Save as a change was made
-        DataManager.sharedInstance.update();
+        //DataManager.sharedInstance.update();
         
         return !completeState;
     }
@@ -349,7 +385,7 @@ extension CenterViewController : EventDetailsViewControllerDelegate {
     func eventDidRequestDeleteAction() {
         // The current editing event will be deleted from the data store
         DataManager.sharedInstance.deleteEvent(self.currentEditingEvent!);
-        DataManager.sharedInstance.update();
+        //DataManager.sharedInstance.update();
         
         // Toggle the right panel
         self.delegate?.toggleRightPanel!();
@@ -402,7 +438,7 @@ extension CenterViewController : RightPanelViewControllerDelegate {
             self.resizeViewForEvent(self.currentEventView!, event: self.currentEditingEvent!);
             
             // Save
-            DataManager.sharedInstance.update();
+            //DataManager.sharedInstance.update();
         }
         
         // Update/create details
@@ -423,7 +459,13 @@ extension CenterViewController : LeftPanelViewControllerDelegate {
 extension CenterViewController {
     func loadInitialViewData() {
         // Load first batch of data with -1 as index
-        let events = DataManager.sharedInstance.loadEventsWithIndex(-1);
+        //let events = DataManager.sharedInstance.loadEventsWithIndex(-1);
+        
+        let index = DataManager.sharedInstance.currentIndex;
+        let events = DataManager.sharedInstance.loadEventsWithIndex(index);
+        
+        self.dateSlider.value = Float(index);
+        self.lastDataRefresh = DataManager.sharedInstance.lastDataReloadDate;
         
         for event in events {
             let view = self.addEventToScrollView(event);
@@ -541,7 +583,7 @@ extension CenterViewController {
         self.dateSlider.value = round(self.dateSlider.value);
         
         let newIndex = Int(self.dateSlider.value);
-        let currentIndex =  DataManager.sharedInstance.currentIndex;
+        let currentIndex = DataManager.sharedInstance.currentIndex;
         
         // If the current displayed list is different to the slider selection, scroll the view,
         // load the new list values in
