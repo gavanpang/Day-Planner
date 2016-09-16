@@ -12,12 +12,18 @@ protocol LeftPanelViewControllerDelegate {
     //func animalSelected(animal: Animal)
 }
 
+
 class LeftPanelViewController : UIViewController {
     
     var delegate : LeftPanelViewControllerDelegate?;
     
+    var multiUseController : MultiUseTableViewController?;
+
+    @IBOutlet var tabBar : UITabBar!;
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
     }
     
     
@@ -25,7 +31,7 @@ class LeftPanelViewController : UIViewController {
     override func viewWillAppear(animated: Bool) {
         let screenWidth = UIScreen.mainScreen().bounds.width;
         
-        let myNav: UINavigationBar = UINavigationBar.init(frame: CGRectMake(35, 20, screenWidth - 35, 44));
+        let myNav: UINavigationBar = UINavigationBar.init(frame: CGRectMake(0, 20, screenWidth - 35, 44));
         self.view.addSubview(myNav);
         
         let doneItem = UIBarButtonItem.init(title: "Done", style: UIBarButtonItemStyle.Plain, target: self, action:#selector(donePressed(_:)));
@@ -48,12 +54,49 @@ class LeftPanelViewController : UIViewController {
         //self.delegate?.rightControllerDidCancelEditing();
     }
     
-    // This method gives us a reference to EventDetailsViewController, as it's embedded in container
+    func tabBar(tabBar: UITabBar!, didSelectItem item: UITabBarItem!) {
+
+        switch item.tag  {
+        case 0:
+            // Overdue
+            self.setTableViewWithOverdueDefaults();
+            break
+        case 1:
+            // Pending
+            break
+        case 2:
+            // Recurring
+            break
+        default:
+            print("default tab");
+            // Overdue
+            break
+        }
+        
+        // Save the selection
+        DataManager.sharedInstance.setLastSelectedTab(item.tag);
+    }
+    
+    func setTableViewWithOverdueDefaults() {
+        self.multiUseController?.setTableViewStateOverdue();
+    }
+    
+    // This method gives us a reference to the TableViewController, as it's embedded in container
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        if let vc = segue.destinationViewController as? EventDetailsViewController
+        if let vc = segue.destinationViewController as? MultiUseTableViewController
             where segue.identifier == "embedMultiUseTable" {
             
-            //self.eventViewController = vc;
-        }
+            self.multiUseController = vc;
+            self.multiUseController?.delegate = self;
+            
+            // Init the view with the correct tab and data
+            let selectedTab = DataManager.sharedInstance.lastSelectedTab;
+            self.tabBar.selectedItem = self.tabBar.items![selectedTab];
+            self.tabBar(self.tabBar, didSelectItem: self.tabBar.selectedItem);
+            }
     }
+}
+
+extension LeftPanelViewController : MultiUseTableViewControllerDelegate {
+    
 }

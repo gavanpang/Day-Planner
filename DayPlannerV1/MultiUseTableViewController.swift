@@ -7,9 +7,36 @@
 //
 
 import UIKit
+import CoreData
+
+protocol MultiUseTableViewControllerDelegate {
+    
+}
+
+enum TabState {
+    case Overdue
+    case Pending
+    case Recurring
+}
 
 class MultiUseTableViewController: UITableViewController {
 
+    var delegate : MultiUseTableViewControllerDelegate?;
+  
+    var tabSelected : TabState = .Overdue;
+    
+    // Change cell height depending on which tab is displayed
+    var cellHeight : CGFloat = 0.0;
+    
+    // One array to store data for all three tabs
+    var dataArray : [NSManagedObject] = [];
+    
+    /*
+    required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder);
+    }
+ */   
+ 
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -20,76 +47,93 @@ class MultiUseTableViewController: UITableViewController {
         // self.navigationItem.rightBarButtonItem = self.editButtonItem()
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+
+    // MARK: - Tab Bar state
+    func setTableViewStateOverdue() {
+        self.tabSelected = TabState.Overdue;
+
+        // Adapt the cell height
+        self.cellHeight = 70.0;
+        
+        // Load the data
+        self.dataArray = DataManager.sharedInstance.loadOverdueEvents();
+        
+        // Display
+        self.tableView.reloadData();
+    }
+    
+    func setTableViewStatePending() {
+        
+    }
+    
+    func setTableViewStateRecurring() {
+        
     }
 
     // MARK: - Table view data source
 
     override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
         // #warning Incomplete implementation, return the number of sections
-        return 0
+        return 1;
     }
 
     override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         // #warning Incomplete implementation, return the number of rows
-        return 0
+        return self.dataArray.count;
     }
-
-    /*
+    
     override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("reuseIdentifier", forIndexPath: indexPath)
+        
+        var cell : UITableViewCell;
+        
+        switch tabSelected  {
+        case .Overdue:
+            cell = self.getCellWithIdentifierOverdue(indexPath);
+            
+            //self.setTableViewWithOverdueDefaults();
+            break
+        case .Pending:
+            cell = self.getCellWithIdentifierPending(indexPath);
 
-        // Configure the cell...
+            break
+        case .Recurring:
+            cell = self.getCellWithIdentifierRecurring(indexPath);
 
-        return cell
+            break
+        }
+        
+        return cell;
     }
-    */
+    
+    private func getCellWithIdentifierOverdue(indexPath: NSIndexPath) -> OverdueTableViewCell {
+        let cell = tableView.dequeueReusableCellWithIdentifier("overdue", forIndexPath: indexPath) as! OverdueTableViewCell;
+        
+        let overdueEvent = dataArray[indexPath.row] as! Event;
+        
+        cell.setTimeAndDateText(overdueEvent.eventDateAndTime!, andEnd: overdueEvent.endTime!);
+        cell.setEventDescriptionText(overdueEvent.eventDescription!);
+        cell.setBGColor((overdueEvent.color?.integerValue)!);
 
-    /*
-    // Override to support conditional editing of the table view.
-    override func tableView(tableView: UITableView, canEditRowAtIndexPath indexPath: NSIndexPath) -> Bool {
-        // Return false if you do not want the specified item to be editable.
-        return true
+        return cell;
     }
-    */
-
-    /*
-    // Override to support editing the table view.
-    override func tableView(tableView: UITableView, commitEditingStyle editingStyle: UITableViewCellEditingStyle, forRowAtIndexPath indexPath: NSIndexPath) {
-        if editingStyle == .Delete {
-            // Delete the row from the data source
-            tableView.deleteRowsAtIndexPaths([indexPath], withRowAnimation: .Fade)
-        } else if editingStyle == .Insert {
-            // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
-        }    
+    
+    private func getCellWithIdentifierPending(indexPath: NSIndexPath) -> UITableViewCell {
+        return tableView.dequeueReusableCellWithIdentifier("pending", forIndexPath: indexPath)
+        
     }
-    */
-
-    /*
-    // Override to support rearranging the table view.
-    override func tableView(tableView: UITableView, moveRowAtIndexPath fromIndexPath: NSIndexPath, toIndexPath: NSIndexPath) {
-
+    
+    private func getCellWithIdentifierRecurring(indexPath: NSIndexPath) -> UITableViewCell {
+        return tableView.dequeueReusableCellWithIdentifier("recurring", forIndexPath: indexPath)
+        
     }
-    */
-
-    /*
-    // Override to support conditional rearranging of the table view.
-    override func tableView(tableView: UITableView, canMoveRowAtIndexPath indexPath: NSIndexPath) -> Bool {
-        // Return false if you do not want the item to be re-orderable.
-        return true
+    
+    override func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
+        return self.cellHeight;
     }
-    */
+    
 
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+        // Dispose of any resources that can be recreated.
     }
-    */
-
 }

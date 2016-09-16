@@ -51,14 +51,20 @@ class CenterViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-    
-        print("CenterVC init");
         
         self.setupTitleLabel();
         self.setupScrollView();
         self.setupScrollViewMarkers();
         self.resizeSliderForBounds();
         self.loadInitialViewData();
+        
+        /*
+        let event = EventView.init(frame: CGRectMake(20, 20, 100, 100), eventID: NSManagedObjectID(), delegate: self, compactFrame: false);
+        event.updateBGColor(1);
+        event.updateStartAndEndTimes(NSDate(), endTime: NSDate());
+        event.updateEventDescription("Haaaa");
+        let key = UIApplication.sharedApplication().keyWindow
+        key?.addSubview(event);*/
         
         // Tap received by scrollview is to create a new event
         let tapRecogniser = UITapGestureRecognizer.init(target: self, action: #selector(newEventWithCustomTime(_:)));
@@ -265,7 +271,7 @@ extension CenterViewController {
             
             // Create new events and add them to view
             let newIndex = DataManager.sharedInstance.currentIndex;
-            let events = DataManager.sharedInstance.loadEventsWithIndex(newIndex);
+            let events = DataManager.sharedInstance.loadFutureEventsWithIndex(newIndex);
             
             // Fill in the details of the events
             for event in events {
@@ -462,7 +468,7 @@ extension CenterViewController {
         //let events = DataManager.sharedInstance.loadEventsWithIndex(-1);
         
         let index = DataManager.sharedInstance.currentIndex;
-        let events = DataManager.sharedInstance.loadEventsWithIndex(index);
+        let events = DataManager.sharedInstance.loadFutureEventsWithIndex(index);
         
         self.dateSlider.value = Float(index);
         self.lastDataRefresh = DataManager.sharedInstance.lastDataReloadDate;
@@ -599,7 +605,7 @@ extension CenterViewController {
             }
             
             // Create new events and add them to view
-            let events = DataManager.sharedInstance.loadEventsWithIndex(newIndex);
+            let events = DataManager.sharedInstance.loadFutureEventsWithIndex(newIndex);
             
             /*for event in events {
                 print(event.eventDescription, event.eventDateAndTime, event.endTime);

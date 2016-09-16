@@ -16,10 +16,10 @@ protocol EventViewDelegate : class {
 }
 
 class EventView: UIView {
-
+    
     weak var delegate : EventViewDelegate?;
     
-    // In case we ever need access directly
+    // To get access to the Core Data entry directly
     var eventID : NSManagedObjectID?;
     
     var timeTextView = UITextView.init();
@@ -49,7 +49,7 @@ class EventView: UIView {
         //self.descriptionTextView.font  = UIFont.systemFontOfSize(12.0);
         
         // Check the compactFrame bool
-        self.setupViews(compactFrame);
+        self.setupView(compactFrame);
         
         // Add all the gesture recognisers
         self.setupGestureRecognisers();
@@ -61,11 +61,10 @@ class EventView: UIView {
         self.alpha = 0.0;
         UIView.animateWithDuration(1.0, animations: {
             self.alpha = 1.0;
-            //self.backgroundColor = bgColor.colorWithAlphaComponent(0.5);
         })
     }
     
-    func setupViews(compactFrame: Bool) {
+    func setupView(compactFrame: Bool) {
         // Position of the time label
         let timeLabelOrigin : CGPoint = CGPointMake(0, 0); // 3 points from the top
         let timeLabelHeight : CGFloat = 15.0; // Both labels are equal height, 10 points
@@ -76,44 +75,42 @@ class EventView: UIView {
         
         // An event of 15 minutes requires a compact view so that the description is visible
         if(compactFrame) {
-            let descTVOrigin : CGPoint = CGPointMake(frame.width/2, 0);
-            let descTVHeight : CGFloat = self.frame.height;
+            let descTVOrigin = CGPointMake(frame.width/2, 0);
+            let descTVHeight = self.frame.height;
             descTVFrame = CGRectMake(descTVOrigin.x, descTVOrigin.y, frame.width/2, descTVHeight);
         }
             
         else {
             // Position of description textview
-            let descTVOrigin : CGPoint = CGPointMake(timeLabelOrigin.x, timeLabelOrigin.y + timeLabelHeight); // Gap between time and description of 4 points
-            let descTVHeight : CGFloat = self.frame.height - descTVOrigin.y - 3; // 3 points from bottom
+            let descTVOrigin = CGPointMake(timeLabelOrigin.x, timeLabelOrigin.y + timeLabelHeight);
+            let descTVHeight = self.frame.height - descTVOrigin.y;
             descTVFrame = CGRectMake(descTVOrigin.x, descTVOrigin.y, frame.width - descTVOrigin.x, descTVHeight);
         }
         
+        // Don't forget to adjust margins of the text view
         self.descriptionTextView.frame = descTVFrame;
         self.descriptionTextView.backgroundColor = UIColor.clearColor();
         self.descriptionTextView.userInteractionEnabled = false;
-        
-        // Adjust margins
         self.descriptionTextView.textContainer.lineFragmentPadding = 0;
-        self.descriptionTextView.textContainerInset = UIEdgeInsetsZero;
+        self.descriptionTextView.textContainerInset = UIEdgeInsetsMake(0, 2, 0, 2);
+        
         
         self.timeTextView.backgroundColor = UIColor.clearColor();
         self.timeTextView.userInteractionEnabled = false;
-        
-        // Adjust margins
         self.timeTextView.textContainer.lineFragmentPadding = 0;
-        self.timeTextView.textContainerInset = UIEdgeInsetsZero;
+        self.timeTextView.textContainerInset = UIEdgeInsetsMake(0, 2, 0, 2);
         
         self.addSubview(self.timeTextView);
         self.addSubview(self.descriptionTextView);
     }
     
-    func setupAttributedFonts() {
+    private func setupAttributedFonts() {
         let textColour : UIColor = UIColor.darkGrayColor();
         let font : UIFont = UIFont.systemFontOfSize(12.0);
         let strikethroughStyle = NSNumber.init(integer: NSUnderlineStyle.StyleSingle.rawValue);
         self.strikeThroughAttributes = [NSStrikethroughStyleAttributeName:strikethroughStyle,
-                          NSForegroundColorAttributeName:textColour,
-                          NSFontAttributeName: font];
+                                        NSForegroundColorAttributeName:textColour,
+                                        NSFontAttributeName: font];
         
         let textColour2 : UIColor = UIColor.blackColor();
         let font2 : UIFont = UIFont.systemFontOfSize(12.0);
@@ -123,9 +120,9 @@ class EventView: UIView {
                                  NSFontAttributeName: font2];
     }
     
-// MARK: - Gesture recognisers
+    // MARK: - Gesture recognisers
     // Add all gesture recognisers to the view
-    func setupGestureRecognisers() {
+    private func setupGestureRecognisers() {
         // Long press to move the view
         let longPressRecogniser = UILongPressGestureRecognizer.init(target: self, action: #selector(handleLongPress(_:)));
         longPressRecogniser.minimumPressDuration = self.minPressDuration;
@@ -205,22 +202,22 @@ class EventView: UIView {
             self.descriptionTextView.attributedText = self.textWithNormalFont(viewText);
             self.timeTextView.attributedText = self.textWithNormalFont(timeText);
         }
-
+        
     }
     
-     func textWithStrikethroughFont(text: String) -> NSAttributedString {
-         let attrText : NSAttributedString = NSAttributedString.init(string: text, attributes: self.strikeThroughAttributes);
-         
-         return attrText;
-     }
-     
-     func textWithNormalFont(text: String) -> NSAttributedString {
-         let attrText : NSAttributedString = NSAttributedString.init(string: text, attributes: self.normalAttributes);
-         
-         return attrText;
-     }
+    private func textWithStrikethroughFont(text: String) -> NSAttributedString {
+        let attrText : NSAttributedString = NSAttributedString.init(string: text, attributes: self.strikeThroughAttributes);
+        
+        return attrText;
+    }
     
-// MARK: - Setter methods
+    private func textWithNormalFont(text: String) -> NSAttributedString {
+        let attrText : NSAttributedString = NSAttributedString.init(string: text, attributes: self.normalAttributes);
+        
+        return attrText;
+    }
+    
+    // MARK: - Setter methods
     
     func updateStartAndEndTimes(startTime: NSDate!, endTime: NSDate!) {
         let startTimeString = DTFormatters.sharedInstance.stringFromTime(startTime);

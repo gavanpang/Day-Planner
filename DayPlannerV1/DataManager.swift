@@ -16,24 +16,7 @@ class DataManager {
     // New singleton declaration
     static let sharedInstance = DataManager();
     
-    // Date of which events to be currently displayed
-    var currentIndex : Int = 0;   // Change this to be read from plist later
-    
-    // Date of the last time the app data was reloaded/recalculated
-    var lastDataReloadDate : NSDate!;
-    
-    // The date of the current page
-    var currentViewDate : NSDate!;
-    
-    // The range of valid NSDates to be included in this view
-    var currentViewDateMin : NSDate!;
-    var currentViewDateMax : NSDate!;
-    
-    // To be used for date maths
-    let calendar : NSCalendar = NSCalendar.currentCalendar();
-    
-    // The array of dates for the next 2 weeks
-    var nextFourteenDates : [NSDate] = [];
+    // MARK: Persistent storage
     
     // Retreive the managedObjectContext from AppDelegate
     let managedObjectContext = (UIApplication.sharedApplication().delegate as! AppDelegate).managedObjectContext;
@@ -41,15 +24,50 @@ class DataManager {
     // Data store for user preferences and program defaults
     private let prefs : NSUserDefaults = NSUserDefaults.standardUserDefaults();
     
-    // The Events of the current date
-    var thisDateEvents : [Event]?;
-
+    // MARK: Misc helper variables
+    
+    // Date of the last time the app data was reloaded/recalculated
+    var lastDataReloadDate : NSDate!;
+    
+    // To be used for date maths
+    let calendar : NSCalendar = NSCalendar.currentCalendar();
+    
     // Colors used by everyone
     var allColors : [UIColor] = [UIColor.orangeColor(), UIColor.blueColor(), UIColor.redColor(),
                                  UIColor.yellowColor(), UIColor.greenColor(), UIColor.cyanColor()];
     
+    // MARK:  Main view variables
+    
+    // Date of which events to be currently displayed
+    var currentIndex : Int = 0;   // Change this to be read from plist later
+    
+    // The array of dates for the next 2 weeks
+    var nextFourteenDates : [NSDate] = [];
+    
+    // The date of the current page
+    var currentViewDate : NSDate!;
+    
+    // Valid Min/Max range for the current view
+    var currentViewDateMin : NSDate?;
+    var currentViewDateMax : NSDate?;
+    
+    // The Events of the current view
+    var currentViewEvents : [Event]?;
+    
+    // MARK: Left view variables
+    
+    var lastSelectedTab : Int = 0;
+    
+    // Overdue events
+    var overdueEvents : [Event]?;
+    
+    // Pending allocation events
+    
+    // Recurring events
+    
     private init() {
         
+        // Read app settings from disk
         let path = NSBundle.mainBundle().pathForResource("DefaultSettings", ofType: "plist")
         let dict = NSDictionary(contentsOfFile: path!)
         
@@ -90,6 +108,12 @@ class DataManager {
         self.resetAllDataToNil();
         self.setUpDates();
         self.loadAppDefaults();
+        
+        // Also redo the database
+        
+        // 1. Delete completed events
+        
+        // 2. Reprocess recurring events
         
         return true;
     }
@@ -153,12 +177,9 @@ class DataManager {
     
 // MARK: - External accessors
     
-    func loadEventsWithIndex(index: Int) -> [Event] {
+    func loadFutureEventsWithIndex(index: Int) -> [Event] {
         
-        // Index -1 is used when loading up, not switching views
-        //if(index != -1) {
         self.setCurrentViewDateWithIndex(index);
-        //}
         
         print("Current date", self.currentViewDate);
         
@@ -166,10 +187,11 @@ class DataManager {
         // today being the date of the current view)
         
         // Get this morning's midnight and tonight's midnight
-        self.recalculateValidDateRangeForCurrentViewDate(self.currentViewDate);
+        self.currentViewDateMin = self.calculateValidMinimumForDate(self.currentViewDate);
+        self.currentViewDateMax = self.calculateValidMaximumForDate(self.currentViewDate);
         
         // Construct the predicate
-        let pred = NSPredicate(format: "(eventDateAndTime > %@) AND (eventDateAndTime < %@)", self.currentViewDateMin, self.currentViewDateMax!);
+        let pred = NSPredicate(format: "(eventDateAndTime > %@) AND (eventDateAndTime < %@)", self.currentViewDateMin!, self.currentViewDateMax!);
         
         //print("Events between", yesterdayMidnight, tomorrowMidnight);
         
@@ -186,7 +208,7 @@ class DataManager {
         
         do {
             try fetchResults =  (self.managedObjectContext.executeFetchRequest(fetchRequest) as? [Event])!;
-            self.thisDateEvents = fetchResults;
+            self.currentViewEvents = fetchResults;
         } catch let error as NSError  {
             print("Could not fetch from MOC \(error), \(error.userInfo)")
         }
@@ -194,7 +216,35 @@ class DataManager {
         // Save the current view to defaults
         self.prefs.setInteger(index, forKey: "currentIndex");
         
-        return self.thisDateEvents!;
+        return self.currentViewEvents!;
+    }
+    
+    func loadOverdueEvents() -> [Event] {
+        // Construct the predicate
+        let todayMin = self.calculateValidMinimumForDate(NSDate());
+        print(todayMin);
+        let pred = NSPredicate(format: "eventDateAndTime < %@", todayMin);
+        
+        // Sort the fetched dates in order
+        let sortDescriptor = NSSortDescriptor(key: "eventDateAndTime", ascending: true)
+        
+        // Form the fetch request with predicate
+        let fetchRequest = NSFetchRequest(entityName: "Event");
+        
+        fetchRequest.predicate = pred;
+        fetchRequest.sortDescriptors = [sortDescriptor];
+        
+        let fetchResults : [Event];
+        
+        do {
+            try fetchResults =  (self.managedObjectContext.executeFetchRequest(fetchRequest) as? [Event])!;
+            self.overdueEvents = fetchResults;
+        } catch let error as NSError  {
+            print("Could not fetch from MOC \(error), \(error.userInfo)")
+        }
+    
+        
+        return self.overdueEvents!;
     }
 
     
@@ -206,18 +256,26 @@ class DataManager {
         self.currentViewDate = self.nextFourteenDates[self.currentIndex];
     }
     
-    private func recalculateValidDateRangeForCurrentViewDate(date: NSDate) {
-        // Get this morning's midnight and tonight's midnight
+    private func calculateValidMinimumForDate(date: NSDate) -> NSDate {
+        // Get this morning's midnight
         let comps = self.calendar.components([NSCalendarUnit.Year, NSCalendarUnit.Month, NSCalendarUnit.Day], fromDate: date);
         comps.hour = 0;
         comps.minute = 0;
         comps.second = 0;
         
-        self.currentViewDateMin = self.calendar.dateFromComponents(comps);
+        return self.calendar.dateFromComponents(comps)!;
+    }
+    
+    private func calculateValidMaximumForDate(date: NSDate) -> NSDate {
+        // Get tonight's midnight
+        let comps = self.calendar.components([NSCalendarUnit.Year, NSCalendarUnit.Month, NSCalendarUnit.Day], fromDate: date);
+        comps.hour = 0;
+        comps.minute = 0;
+        comps.second = 0;
         
         comps.day += 1;
         
-        self.currentViewDateMax = self.calendar.dateFromComponents(comps);
+        return self.calendar.dateFromComponents(comps)!;
     }
     
     func currentViewDateWithTime(hours: Int, minutes: Int) -> NSDate {
@@ -230,7 +288,7 @@ class DataManager {
     }
     
     func isDateWithinCurrentViewDate(date: NSDate) -> Bool {
-        let compResult = self.calendar.compareDate(self.currentViewDateMin, toDate: date, toUnitGranularity: NSCalendarUnit.Day)
+        let compResult = self.calendar.compareDate(self.currentViewDateMin!, toDate: date, toUnitGranularity: NSCalendarUnit.Day)
         
         if(compResult == NSComparisonResult.OrderedSame) {
             return true;
@@ -257,8 +315,15 @@ class DataManager {
         }
     }
 
+    // Loads app settings, and sets the variables that the view needs
     private func loadAppDefaults() {
         
+        // Last selected tab in left panel
+        self.lastSelectedTab = self.prefs.integerForKey("lastSelectedTab");
+        
+        ///////////////////////////////////
+        // Main View setup
+        ///////////////////////////////////
         // Get the list number that was last used when app closed
         let lastOpenIndex = self.prefs.integerForKey("currentIndex");
         
@@ -286,6 +351,11 @@ class DataManager {
             // Otherwise calculate which day was the last opened and display that instead
             else {
                 self.currentIndex = lastOpenIndex - comps.day;
+                
+                // Lower bounds check
+                if(self.currentIndex < 0) {
+                    self.currentIndex = 0;
+                }
             }
         }
         
@@ -297,9 +367,14 @@ class DataManager {
         self.prefs.setObject(today, forKey: "lastReloadDate");
     }
     
+    // MARK: - Left Panel
+    func setLastSelectedTab(tabNum : Int) {
+        self.lastSelectedTab = tabNum;
+        self.prefs.setObject(tabNum, forKey: "lastSelectedTab");
+    }
     
     
-// MARK : - Managed Object Context
+// MARK: - Managed Object Context
     func createEvent(startDateAndTime: NSDate) -> Event {
         return Event.createEvent(self.managedObjectContext, eventDateAndTime: startDateAndTime);
     }

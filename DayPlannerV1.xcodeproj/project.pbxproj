@@ -22,9 +22,11 @@
 		F292CB561D4006C30004646B /* LeftPanelViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB551D4006C30004646B /* LeftPanelViewController.swift */; };
 		F292CB581D4006F00004646B /* RightPanelViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB571D4006F00004646B /* RightPanelViewController.swift */; };
 		F292CB5B1D4353F30004646B /* TimeSeparator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB5A1D4353F30004646B /* TimeSeparator.swift */; };
-		F292CB5D1D44C8580004646B /* EventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB5C1D44C8580004646B /* EventView.swift */; };
 		F292CB5F1D489AF70004646B /* EventDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F292CB5E1D489AF70004646B /* EventDetailsViewController.swift */; };
 		F2AAE23B1D6EBDA500FDE04D /* MultiUseTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2AAE23A1D6EBDA500FDE04D /* MultiUseTableViewController.swift */; };
+		F2EFE7C81D7BCDC700CE8499 /* OverdueTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2EFE7C71D7BCDC700CE8499 /* OverdueTableViewCell.swift */; };
+		F2EFE7CA1D7BCE5200CE8499 /* OverdueEventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2EFE7C91D7BCE5200CE8499 /* OverdueEventView.swift */; };
+		F2EFE7CD1D7BD00A00CE8499 /* EventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2EFE7CC1D7BD00A00CE8499 /* EventView.swift */; };
 		F2F2E4E31D4B343100536D32 /* Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F2E4E11D4B343100536D32 /* Event.swift */; };
 /* End PBXBuildFile section */
 
@@ -46,9 +48,11 @@
 		F292CB551D4006C30004646B /* LeftPanelViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LeftPanelViewController.swift; sourceTree = "<group>"; };
 		F292CB571D4006F00004646B /* RightPanelViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RightPanelViewController.swift; sourceTree = "<group>"; };
 		F292CB5A1D4353F30004646B /* TimeSeparator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TimeSeparator.swift; sourceTree = "<group>"; };
-		F292CB5C1D44C8580004646B /* EventView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EventView.swift; sourceTree = "<group>"; };
 		F292CB5E1D489AF70004646B /* EventDetailsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EventDetailsViewController.swift; sourceTree = "<group>"; };
 		F2AAE23A1D6EBDA500FDE04D /* MultiUseTableViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MultiUseTableViewController.swift; sourceTree = "<group>"; };
+		F2EFE7C71D7BCDC700CE8499 /* OverdueTableViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OverdueTableViewCell.swift; sourceTree = "<group>"; };
+		F2EFE7C91D7BCE5200CE8499 /* OverdueEventView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OverdueEventView.swift; sourceTree = "<group>"; };
+		F2EFE7CC1D7BD00A00CE8499 /* EventView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EventView.swift; sourceTree = "<group>"; };
 		F2F2E4E11D4B343100536D32 /* Event.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Event.swift; path = ../Event.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -121,7 +125,7 @@
 			children = (
 				F292CB511D4004C00004646B /* CenterViewController.swift */,
 				F292CB5A1D4353F30004646B /* TimeSeparator.swift */,
-				F292CB5C1D44C8580004646B /* EventView.swift */,
+				F2EFE7CC1D7BD00A00CE8499 /* EventView.swift */,
 			);
 			name = "Main View";
 			sourceTree = "<group>";
@@ -131,6 +135,7 @@
 			children = (
 				F292CB551D4006C30004646B /* LeftPanelViewController.swift */,
 				F2AAE23A1D6EBDA500FDE04D /* MultiUseTableViewController.swift */,
+				F2EFE7CB1D7BCE7A00CE8499 /* Overdue */,
 			);
 			name = "Left View";
 			sourceTree = "<group>";
@@ -142,6 +147,15 @@
 				F292CB5E1D489AF70004646B /* EventDetailsViewController.swift */,
 			);
 			name = "Right View";
+			sourceTree = "<group>";
+		};
+		F2EFE7CB1D7BCE7A00CE8499 /* Overdue */ = {
+			isa = PBXGroup;
+			children = (
+				F2EFE7C71D7BCDC700CE8499 /* OverdueTableViewCell.swift */,
+				F2EFE7C91D7BCE5200CE8499 /* OverdueEventView.swift */,
+			);
+			name = Overdue;
 			sourceTree = "<group>";
 		};
 		F2F2E4DF1D4B33DC00536D32 /* Core Data */ = {
@@ -229,17 +243,19 @@
 			files = (
 				F25BDE831D508AFD00BF978F /* DTFormatters.swift in Sources */,
 				F292CB3B1D3FA5850004646B /* AppDelegate.swift in Sources */,
+				F2EFE7C81D7BCDC700CE8499 /* OverdueTableViewCell.swift in Sources */,
+				F2EFE7CD1D7BD00A00CE8499 /* EventView.swift in Sources */,
 				F292CB581D4006F00004646B /* RightPanelViewController.swift in Sources */,
 				F292CB501D4002E60004646B /* ContainerViewController.swift in Sources */,
 				F292CB561D4006C30004646B /* LeftPanelViewController.swift in Sources */,
 				F292CB431D3FA5860004646B /* DayPlannerV1.xcdatamodeld in Sources */,
 				F292CB521D4004C00004646B /* CenterViewController.swift in Sources */,
+				F2EFE7CA1D7BCE5200CE8499 /* OverdueEventView.swift in Sources */,
 				F292CB5F1D489AF70004646B /* EventDetailsViewController.swift in Sources */,
 				F25BDE921D5CBFBC00BF978F /* ColorOptionView.swift in Sources */,
 				F292CB5B1D4353F30004646B /* TimeSeparator.swift in Sources */,
 				F2AAE23B1D6EBDA500FDE04D /* MultiUseTableViewController.swift in Sources */,
 				F2787C1D1D5E2A9800E91A2B /* Event+CoreDataProperties.swift in Sources */,
-				F292CB5D1D44C8580004646B /* EventView.swift in Sources */,
 				F25BDE861D592F4C00BF978F /* DataManager.swift in Sources */,
 				F2F2E4E31D4B343100536D32 /* Event.swift in Sources */,
 			);

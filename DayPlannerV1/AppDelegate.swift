@@ -49,7 +49,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Check if the data needs reloading when the application wakes up
         let container = window!.rootViewController as! ContainerViewController;
         
-        print(container.centerViewController.hourOffset);
+        container.centerViewController.checkForDateRolloverAfterAppEnteredForeground();
         
         // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
     }
